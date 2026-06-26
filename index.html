@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESDS Recruitment Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #f5f5f4;
+    --surface: #ffffff;
+    --surface-2: #fafaf9;
+    --border: #e5e5e3;
+    --border-strong: #d4d4d1;
+    --text-primary: #1a1a18;
+    --text-secondary: #57574f;
+    --text-muted: #9b9b90;
+    --accent: #2563eb;
+    --accent-bg: #eff6ff;
+    --accent-text: #1d4ed8;
+    --accent-border: #bfdbfe;
+    --success-bg: #f0fdf4;
+    --success-text: #15803d;
+    --warning-bg: #fffbeb;
+    --warning-text: #b45309;
+    --danger-bg: #fef2f2;
+    --danger-text: #b91c1c;
+    --pro-bg: #f5f3ff;
+    --pro-text: #6d28d9;
+    --radius: 8px;
+    --font: 'Inter', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 210px; min-width: 210px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .logo { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); }
+  .logo-mark { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+  .logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon i { color: #fff; font-size: 15px; }
+  .logo-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .logo-sub { font-size: 11px; color: var(--text-muted); margin-left: 36px; }
+  .nav { padding: 10px 0; flex: 1; overflow-y: auto; }
+  .nav-section { font-size: 10px; font-weight: 600; color: var(--text-muted); padding: 10px 16px 4px; text-transform: uppercase; letter-spacing: 0.07em; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 16px; font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: all 0.12s; border-radius: 0; }
+  .nav-item:hover { background: var(--bg); color: var(--text-primary); }
+  .nav-item.active { background: var(--accent-bg); color: var(--accent-text); font-weight: 500; border-right: 2px solid var(--accent); }
+  .nav-item i { font-size: 17px; }
+  .user-area { padding: 12px 16px; border-top: 1px solid var(--border); }
+  .user-chip { display: flex; align-items: center; gap: 9px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-bg); color: var(--accent-text); font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-role-tag { font-size: 11px; color: var(--text-muted); }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .topbar { padding: 13px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); flex-shrink: 0; }
+  .page-title { font-size: 16px; font-weight: 600; }
+  .page-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--surface); font-size: 13px; cursor: pointer; color: var(--text-primary); font-family: var(--font); font-weight: 500; transition: all 0.12s; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+  .btn i { font-size: 15px; }
+
+  /* Content */
+  .content { padding: 20px 22px; flex: 1; overflow-y: auto; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px 17px; }
+  .metric-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  .metric-value { font-size: 26px; font-weight: 600; line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Filters */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+  .section-title { font-size: 14px; font-weight: 600; }
+  .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .search-wrap { position: relative; }
+  .search-wrap i { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-muted); }
+  .search-input { padding: 6px 10px 6px 30px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-size: 13px; color: var(--text-primary); font-family: var(--font); width: 200px; }
+  .search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .filter-btn { padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; cursor: pointer; color: var(--text-secondary); font-family: var(--font); font-weight: 500; transition: all 0.12s; }
+  .filter-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Table */
+  .table-wrap { background: var(--surface); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  thead th { padding: 10px 15px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); white-space: nowrap; text-transform: uppercase; letter-spacing: 0.05em; }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-bg); }
+  td { padding: 12px 15px; vertical-align: middle; }
+  .candidate-name { font-weight: 500; font-size: 13px; }
+  .candidate-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .role-name { font-size: 13px; }
+  .role-dept { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .badge-active { background: var(--success-bg); color: var(--success-text); }
+  .badge-hold { background: var(--warning-bg); color: var(--warning-text); }
+  .badge-cancelled { background: var(--danger-bg); color: var(--danger-text); }
+  .badge-scheduled { background: var(--accent-bg); color: var(--accent-text); }
+
+  /* Stage pill */
+  .stage-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .stage-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-active { background: var(--accent); }
+  .dot-done { background: #16a34a; }
+  .dot-hold { background: #d97706; }
+  .dot-cancelled { background: #dc2626; }
+  .dot-pending { background: var(--border-strong); }
+
+  /* TA chip */
+  .ta-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .ta-av { width: 22px; height: 22px; border-radius: 50%; background: var(--pro-bg); color: var(--pro-text); font-size: 9px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* Action buttons */
+  .actions { display: flex; align-items: center; gap: 5px; }
+  .icon-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid var(--border); background: transparent; cursor: pointer; color: var(--text-muted); transition: all 0.12s; }
+  .icon-btn:hover { background: var(--bg); color: var(--text-primary); border-color: var(--border-strong); }
+  .icon-btn i { font-size: 14px; }
+
+  /* Empty state */
+  .empty-cell { text-align: center; padding: 40px !important; color: var(--text-muted); }
+  .empty-cell i { font-size: 28px; display: block; margin: 0 auto 8px; }
+
+  /* Detail panel */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; display: none; }
+  .overlay.open { display: block; }
+  .detail-panel { position: fixed; top: 0; right: 0; width: 460px; height: 100vh; background: var(--surface); border-left: 1px solid var(--border); z-index: 201; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s ease; overflow: hidden; }
+  .detail-panel.open { transform: translateX(0); }
+  .detail-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+  .detail-name { font-size: 16px; font-weight: 600; }
+  .detail-meta-txt { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .detail-body { padding: 20px; flex: 1; overflow-y: auto; }
+  .detail-section { margin-bottom: 22px; }
+  .detail-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; }
+  .info-label { color: var(--text-muted); }
+  .info-value { font-weight: 500; text-align: right; }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; }
+  .tl-item { display: flex; gap: 12px; padding: 8px 0; position: relative; }
+  .tl-item:not(:last-child)::after { content: ''; position: absolute; left: 11px; top: 30px; bottom: -8px; width: 1px; background: var(--border); }
+  .tl-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+  .tl-done { background: var(--success-bg); color: var(--success-text); }
+  .tl-active { background: var(--accent-bg); color: var(--accent-text); }
+  .tl-pending { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+  .tl-hold { background: var(--warning-bg); color: var(--warning-text); }
+  .tl-stage { font-size: 13px; font-weight: 500; }
+  .tl-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .tl-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .comment-box { background: var(--accent-bg); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 10px 12px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+
+  /* Salary toggle */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+  .toggle { position: relative; width: 38px; height: 21px; cursor: pointer; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-slider { position: absolute; inset: 0; border-radius: 21px; background: var(--border-strong); transition: 0.2s; }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-slider::before { content: ''; position: absolute; width: 15px; height: 15px; left: 3px; bottom: 3px; border-radius: 50%; background: white; transition: 0.2s; }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(17px); }
+  .salary-hidden { filter: blur(5px); user-select: none; pointer-events: none; }
+
+  /* Comment textarea */
+  .form-input { padding: 9px 11px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg); font-size: 13px; color: var(--text-primary); font-family: var(--font); width: 100%; }
+  .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  textarea.form-input { min-height: 76px; resize: vertical; line-height: 1.5; }
+  select.form-input { cursor: pointer; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 600px; max-height: 88vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-body { padding: 22px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .form-divider { grid-column: 1 / -1; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; padding: 6px 0 4px; border-bottom: 1px solid var(--border); margin-top: 4px; }
+  .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; background: var(--surface); }
+
+  /* Role modal */
+  .role-option { padding: 13px 15px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; transition: all 0.12s; margin-bottom: 8px; }
+  .role-option:hover { border-color: var(--accent); background: var(--accent-bg); }
+  .role-option.selected { border-color: var(--accent); background: var(--accent-bg); }
+  .role-option-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+  .role-option-desc { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a18; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 999; transition: transform 0.22s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon"><i class="ti ti-users"></i></div>
+        <span class="logo-title">ESDS Recruit</span>
+      </div>
+      <div class="logo-sub">Talent Acquisition Portal</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item"><i class="ti ti-users"></i> All processes</div>
+      <div class="nav-item"><i class="ti ti-calendar"></i> Scheduled</div>
+      <div class="nav-section">Manage</div>
+      <div class="nav-item"><i class="ti ti-user-circle"></i> Hiring managers</div>
+      <div class="nav-item"><i class="ti ti-chart-bar"></i> Reports</div>
+      <div class="nav-item"><i class="ti ti-settings"></i> Settings</div>
+    </nav>
+    <div class="user-area">
+      <div class="user-chip">
+        <div class="avatar" id="sidebarAvatar">SC</div>
+        <div>
+          <div class="user-name" id="sidebarName">Sachu</div>
+          <div class="user-role-tag" id="sidebarRole">Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Recruitment dashboard</div>
+        <div class="page-sub">All active hiring processes — ESDS Chennai</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn" onclick="openRoleModal()"><i class="ti ti-eye"></i> Viewing as: <span id="roleLabel">Admin</span></button>
+        <button class="btn btn-primary" id="newProcessBtn" onclick="openNewModal()"><i class="ti ti-plus"></i> New process</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Metrics -->
+      <div class="metrics">
+        <div class="metric-card">
+          <div class="metric-label">Active processes</div>
+          <div class="metric-value" id="m-active">—</div>
+          <div class="metric-sub">Across all TAs</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Interviews this week</div>
+          <div class="metric-value" id="m-week">—</div>
+          <div class="metric-sub">L1 &amp; L2 combined</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">On hold</div>
+          <div class="metric-value" id="m-hold">—</div>
+          <div class="metric-sub">Pending reschedule</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Avg. days in pipeline</div>
+          <div class="metric-value" id="m-days">—</div>
+          <div class="metric-sub">Active processes only</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="section-header">
+        <div class="section-title">Candidate pipeline</div>
+        <div class="filters">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input class="search-input" id="searchInput" placeholder="Search candidate, role…" oninput="renderTable()">
+          </div>
+          <button class="filter-btn active" onclick="setFilter(this,'all')">All</button>
+          <button class="filter-btn" onclick="setFilter(this,'active')">Active</button>
+          <button class="filter-btn" onclick="setFilter(this,'hold')">On hold</button>
+          <button class="filter-btn" onclick="setFilter(this,'scheduled')">Scheduled</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>Role</th>
+              <th>Current stage</th>
+              <th>Status</th>
+              <th>TA owner</th>
+              <th>HM (current)</th>
+              <th>Days</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail overlay -->
+<div class="overlay" id="detailOverlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <div>
+      <div class="detail-name" id="dp-name"></div>
+      <div class="detail-meta-txt" id="dp-meta"></div>
+    </div>
+    <button class="icon-btn" onclick="closeDetail()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="detail-body" id="dp-body"></div>
+</div>
+
+<!-- New process modal -->
+<div class="modal-overlay" id="newModal" onclick="closeNewModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Start new recruitment process</div>
+      <button class="icon-btn" onclick="closeNewModalDirect()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-divider">Job details</div>
+        <div class="form-group"><label class="form-label">Job title / role *</label><input class="form-input" id="f-role" placeholder="e.g. Senior DevOps Engineer"></div>
+        <div class="form-group"><label class="form-label">Department</label><input class="form-input" id="f-dept" placeholder="e.g. Infrastructure"></div>
+        <div class="form-group"><label class="form-label">Employment type</label>
+          <select class="form-input" id="f-emptype"><option>Full time</option><option>Contract</option><option>Internship</option></select></div>
+        <div class="form-group"><label class="form-label">Job location</label><input class="form-input" id="f-loc" placeholder="e.g. Chennai"></div>
+        <div class="form-group"><label class="form-label">Interview rounds</label>
+          <select class="form-input" id="f-rounds"><option value="2">2 rounds (L1 Tech + HR)</option><option value="3">3 rounds (L1 + L2 Tech + HR)</option><option value="4">4 rounds (L1 + L2 + L3 Tech + HR)</option></select></div>
+        <div class="form-group"><label class="form-label">Assigned TA</label>
+          <select class="form-input" id="f-ta"><option>Priya M</option><option>Arjun R</option><option>Divya K</option></select></div>
+
+        <div class="form-divider">Candidate details</div>
+        <div class="form-group"><label class="form-label">Full name *</label><input class="form-input" id="f-name" placeholder="Candidate full name"></div>
+        <div class="form-group"><label class="form-label">Personal email</label><input class="form-input" id="f-email" type="email" placeholder="email@example.com"></div>
+        <div class="form-group"><label class="form-label">Phone number</label><input class="form-input" id="f-phone" placeholder="+91 XXXXX XXXXX"></div>
+        <div class="form-group"><label class="form-label">Current organization</label><input class="form-input" id="f-org" placeholder="Company name"></div>
+        <div class="form-group"><label class="form-label">Current designation</label><input class="form-input" id="f-desig" placeholder="Current role title"></div>
+        <div class="form-group"><label class="form-label">Total experience (yrs)</label><input class="form-input" id="f-exp" type="number" placeholder="e.g. 5"></div>
+        <div class="form-group"><label class="form-label">Relevant experience (yrs)</label><input class="form-input" id="f-relexp" type="number" placeholder="e.g. 3"></div>
+        <div class="form-group"><label class="form-label">Highest qualification</label><input class="form-input" id="f-edu" placeholder="e.g. B.Tech CSE"></div>
+        <div class="form-group"><label class="form-label">Notice period</label><input class="form-input" id="f-np" placeholder="e.g. 30 days"></div>
+        <div class="form-group"><label class="form-label">Current location</label><input class="form-input" id="f-curloc" placeholder="City"></div>
+        <div class="form-group"><label class="form-label">Preferred location</label><input class="form-input" id="f-prefloc" placeholder="City"></div>
+        <div class="form-group"><label class="form-label">Current CTC (LPA)</label><input class="form-input" id="f-curctc" placeholder="e.g. 8.5"></div>
+        <div class="form-group"><label class="form-label">Expected CTC range (LPA)</label><input class="form-input" id="f-expctc" placeholder="e.g. 10 – 12"></div>
+        <div class="form-group"><label class="form-label">WFO confirmation</label>
+          <select class="form-input" id="f-wfo"><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Rotational shifts</label>
+          <select class="form-input" id="f-shifts"><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label class="form-label">Source portal</label>
+          <select class="form-input" id="f-source"><option>Naukri</option><option>LinkedIn</option><option>Indeed</option><option>Referral</option><option>Other</option></select></div>
+        <div class="form-group"><label class="form-label">Preferred interview slots</label><input class="form-input" id="f-slots" placeholder="e.g. Weekdays 10am – 12pm"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeNewModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitNew()"><i class="ti ti-check"></i> Create process</button>
+    </div>
+  </div>
+</div>
+
+<!-- Role switcher modal -->
+<div class="modal-overlay" id="roleModal" onclick="closeRoleModal(event)">
+  <div class="modal" style="max-width:380px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Switch view role</div>
+      <button class="icon-btn" onclick="closeRoleModalDirect()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Preview how the dashboard looks for each role.</p>
+      <div class="role-option selected" id="ro-Admin" onclick="switchRole('Admin')">
+        <div class="role-option-title"><i class="ti ti-shield" style="color:var(--accent-text)"></i> Admin</div>
+        <div class="role-option-desc">Full access — create, edit, update all processes. Salary always visible.</div>
+      </div>
+      <div class="role-option" id="ro-TA" onclick="switchRole('TA')">
+        <div class="role-option-title"><i class="ti ti-user-check" style="color:var(--success-text)"></i> TA (owner)</div>
+        <div class="role-option-desc">Manage and update own processes. Can toggle salary visibility for HM.</div>
+      </div>
+      <div class="role-option" id="ro-HM" onclick="switchRole('HM')">
+        <div class="role-option-title"><i class="ti ti-briefcase" style="color:var(--warning-text)"></i> Hiring manager</div>
+        <div class="role-option-desc">View only access across all processes. Salary hidden by default.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const ROLES = {
+  Admin: { canCreate:true, canEdit:true, canStatus:true, canCancel:true, seeSalary:true },
+  TA:    { canCreate:true, canEdit:true, canStatus:true, canCancel:true, seeSalary:true },
+  HM:    { canCreate:false, canEdit:false, canStatus:false, canCancel:false, seeSalary:false }
+};
+
+let currentRole = 'Admin';
+let activeFilter = 'all';
+
+const candidates = [
+  { id:1, name:'Ravi Shankar', role:'Senior DevOps Engineer', dept:'Infrastructure', org:'TCS', exp:'7 yrs', relexp:'5 rel', stage:'L1 scheduled', stageCode:'scheduled', status:'scheduled', ta:'Priya M', taInit:'PM', hm:'Karthik R', days:8, salary:{cur:'12 LPA', exp:'15–18 LPA'}, salaryVisible:true,
+    timeline:[
+      {label:'Screening call completed', detail:'7 yrs exp, WFO confirmed, 30 days NP, rotational shifts ok', date:'Jun 12', state:'done'},
+      {label:'Profile shared with HM', detail:'Shared to Karthik R along with 2 other profiles', date:'Jun 13', state:'done'},
+      {label:'HM approved profile', detail:'Karthik R selected this profile for L1 interview', date:'Jun 14', state:'done'},
+      {label:'Scheduling in progress', detail:'Slots confirmed from both parties via Teams', date:'Jun 16', state:'done'},
+      {label:'L1 scheduled', detail:'Jun 28, 11:00 AM — Teams link sent to both parties', date:'Jun 17', state:'active'},
+      {label:'L1 completed', detail:'Pending', date:'—', state:'pending'},
+      {label:'HR round', detail:'Pending', date:'—', state:'pending'},
+    ]},
+  { id:2, name:'Meena Iyer', role:'Cloud Solutions Architect', dept:'Cloud', org:'Infosys', exp:'9 yrs', relexp:'8 rel', stage:'L2 scheduled', stageCode:'scheduled', status:'scheduled', ta:'Arjun R', taInit:'AR', hm:'Suresh V', days:15, salary:{cur:'18 LPA', exp:'22–25 LPA'}, salaryVisible:false,
+    timeline:[
+      {label:'Screening call completed', detail:'Strong cloud background, 9 yrs exp, open to relocation', date:'Jun 8', state:'done'},
+      {label:'Profile shared with HM', detail:'Sent to Suresh V for L1 HM review', date:'Jun 9', state:'done'},
+      {label:'HM approved profile', detail:'Shortlisted for L1 interview', date:'Jun 10', state:'done'},
+      {label:'L1 completed', detail:'Selected by Rajiv N — strong technical skills noted', date:'Jun 16', state:'done'},
+      {label:'L2 scheduled', detail:'Jun 27, 3:00 PM — Suresh V conducting', date:'Jun 19', state:'active'},
+      {label:'HR round', detail:'Pending L2 outcome', date:'—', state:'pending'},
+    ]},
+  { id:3, name:'Arun Prasad', role:'Network Engineer', dept:'IT Infrastructure', org:'HCL', exp:'4 yrs', relexp:'4 rel', stage:'HM review pending', stageCode:'active', status:'active', ta:'Priya M', taInit:'PM', hm:'Pending', days:3, salary:{cur:'6 LPA', exp:'8–9 LPA'}, salaryVisible:true,
+    timeline:[
+      {label:'Screening call completed', detail:'Good fit — 4 yrs network exp, immediate joiner available', date:'Jun 20', state:'done'},
+      {label:'Profile shared with HM', detail:'2 profiles sent to Deepak S for shortlisting', date:'Jun 21', state:'done'},
+      {label:'HM review pending', detail:'Awaiting Deepak S response on profile shortlisting', date:'—', state:'active'},
+      {label:'L1 scheduling', detail:'Pending HM approval', date:'—', state:'pending'},
+    ]},
+  { id:4, name:'Lakshmi Nair', role:'HR Business Partner', dept:'Human Resources', org:'Wipro', exp:'6 yrs', relexp:'6 rel', stage:'On hold', stageCode:'hold', status:'hold', ta:'Divya K', taInit:'DK', hm:'Neha G', days:20, salary:{cur:'10 LPA', exp:'13–15 LPA'}, salaryVisible:true,
+    holdComment:'Neha G is on leave until Jul 5. Lakshmi has been informed and confirmed availability. Process resumes first week of July.',
+    timeline:[
+      {label:'Screening call completed', detail:'Strong HR operations background', date:'Jun 5', state:'done'},
+      {label:'Profile shared with HM', detail:'Sent to Neha G for review', date:'Jun 6', state:'done'},
+      {label:'HM approved profile', detail:'Shortlisted for L1 interview', date:'Jun 7', state:'done'},
+      {label:'L1 postponed', detail:'Jun 14 interview moved — HM unavailable', date:'Jun 13', state:'done'},
+      {label:'Process on hold', detail:'HM Neha G on leave until Jul 5. Candidate informed.', date:'Jun 14', state:'hold'},
+    ]},
+  { id:5, name:'Vikram Shetty', role:'Sales Manager — Enterprise', dept:'Sales', org:'Zoho', exp:'8 yrs', relexp:'5 rel', stage:'HR round completed', stageCode:'done', status:'active', ta:'Arjun R', taInit:'AR', hm:'Pradeep K', days:28, salary:{cur:'14 LPA', exp:'18–20 LPA'}, salaryVisible:true,
+    timeline:[
+      {label:'Screening call completed', detail:'Strong enterprise sales track record', date:'May 28', state:'done'},
+      {label:'Profile shared with HM', detail:'Sent to Pradeep K', date:'May 29', state:'done'},
+      {label:'HM approved profile', detail:'Selected for interview', date:'May 30', state:'done'},
+      {label:'L1 completed', detail:'Selected — strong domain knowledge and client handling', date:'Jun 5', state:'done'},
+      {label:'L2 completed', detail:'Selected — leadership and team management assessment clear', date:'Jun 12', state:'done'},
+      {label:'HR round completed', detail:'Selected — proceeding to document verification', date:'Jun 20', state:'done'},
+    ]},
+  { id:6, name:'Divya Krishnan', role:'Frontend Developer', dept:'Product Engineering', org:'Freshworks', exp:'3 yrs', relexp:'3 rel', stage:'Profile rejected by HM', stageCode:'cancelled', status:'cancelled', ta:'Priya M', taInit:'PM', hm:'Anand T', days:5, salary:{cur:'7 LPA', exp:'10–11 LPA'}, salaryVisible:true,
+    timeline:[
+      {label:'Screening call completed', detail:'3 yrs React experience, strong portfolio', date:'Jun 18', state:'done'},
+      {label:'Profile shared with HM', detail:'3 profiles shared to Anand T for review', date:'Jun 19', state:'done'},
+      {label:'Profile rejected by HM', detail:'Anand T: Looking for 5+ yrs experience for this role', date:'Jun 20', state:'pending'},
+    ]},
+];
+
+function dotClass(code) {
+  if(code==='scheduled') return 'dot-active';
+  if(code==='done') return 'dot-done';
+  if(code==='hold') return 'dot-hold';
+  if(code==='cancelled') return 'dot-cancelled';
+  return 'dot-active';
+}
+
+function statusBadge(s) {
+  const map = { scheduled:'badge-scheduled', active:'badge-active', hold:'badge-hold', cancelled:'badge-cancelled' };
+  const label = { scheduled:'Scheduled', active:'Active', hold:'On hold', cancelled:'Closed' };
+  return `<span class="badge ${map[s]||'badge-active'}">${label[s]||s}</span>`;
+}
+
+function updateMetrics() {
+  document.getElementById('m-active').textContent = candidates.filter(c=>c.status==='active'||c.status==='scheduled').length;
+  document.getElementById('m-week').textContent = candidates.filter(c=>c.status==='scheduled').length;
+  document.getElementById('m-hold').textContent = candidates.filter(c=>c.status==='hold').length;
+  const active = candidates.filter(c=>c.status==='active'||c.status==='scheduled');
+  const avg = active.length ? Math.round(active.reduce((s,c)=>s+c.days,0)/active.length) : 0;
+  document.getElementById('m-days').textContent = avg+'d';
+}
+
+function renderTable() {
+  const body = document.getElementById('tableBody');
+  const role = ROLES[currentRole];
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let rows = candidates.filter(c => {
+    if(activeFilter==='active' && c.status!=='active') return false;
+    if(activeFilter==='hold' && c.status!=='hold') return false;
+    if(activeFilter==='scheduled' && c.status!=='scheduled') return false;
+    if(search && !c.name.toLowerCase().includes(search) && !c.role.toLowerCase().includes(search) && !c.ta.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if(!rows.length) {
+    body.innerHTML = `<tr><td colspan="8" class="empty-cell"><i class="ti ti-inbox"></i>No processes match this filter</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = rows.map(c => `
+    <tr onclick="openDetail(${c.id})">
+      <td><div class="candidate-name">${c.name}</div><div class="candidate-meta">${c.org} · ${c.exp} / ${c.relexp}</div></td>
+      <td><div class="role-name">${c.role}</div><div class="role-dept">${c.dept}</div></td>
+      <td><span class="stage-pill"><span class="stage-dot ${dotClass(c.stageCode)}"></span>${c.stage}</span></td>
+      <td>${statusBadge(c.status)}</td>
+      <td><div class="ta-chip"><div class="ta-av">${c.taInit}</div>${c.ta}</div></td>
+      <td style="font-size:13px;color:var(--text-secondary)">${c.hm}</td>
+      <td style="font-size:13px;color:var(--text-secondary);text-align:center">${c.days}d</td>
+      <td><div class="actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" title="View details" onclick="openDetail(${c.id})"><i class="ti ti-eye"></i></button>
+        ${role.canEdit ? `<button class="icon-btn" title="Edit" onclick="showToast('Edit form — coming in next update')"><i class="ti ti-edit"></i></button>` : ''}
+        ${role.canStatus ? `<button class="icon-btn" title="Update status" onclick="showToast('Status update — coming in next update')"><i class="ti ti-refresh"></i></button>` : ''}
+      </div></td>
+    </tr>`).join('');
+}
+
+function openDetail(id) {
+  const c = candidates.find(x=>x.id===id);
+  if(!c) return;
+  const role = ROLES[currentRole];
+  const showSalary = role.seeSalary && c.salaryVisible;
+
+  document.getElementById('dp-name').textContent = c.name;
+  document.getElementById('dp-meta').textContent = c.role + ' · ' + c.dept;
+
+  const salaryToggle = (currentRole==='Admin'||currentRole==='TA') ? `
+    <div class="toggle-row">
+      <span style="font-size:12px;color:var(--text-secondary)">Show salary to hiring manager</span>
+      <label class="toggle"><input type="checkbox" ${c.salaryVisible?'checked':''} onchange="toggleSalary(${c.id},this.checked)"><span class="toggle-slider"></span></label>
+    </div>` : '';
+
+  document.getElementById('dp-body').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Candidate info</div>
+      <div class="info-row"><span class="info-label">Current organization</span><span class="info-value">${c.org}</span></div>
+      <div class="info-row"><span class="info-label">Total / Relevant exp</span><span class="info-value">${c.exp} / ${c.relexp}</span></div>
+      <div class="info-row"><span class="info-label">Days in pipeline</span><span class="info-value">${c.days} days</span></div>
+      <div class="info-row"><span class="info-label">Assigned TA</span><span class="info-value">${c.ta}</span></div>
+      <div class="info-row"><span class="info-label">Hiring manager</span><span class="info-value">${c.hm}</span></div>
+      <div class="info-row"><span class="info-label">Overall status</span><span class="info-value">${statusBadge(c.status)}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Compensation</div>
+      ${salaryToggle}
+      <div class="info-row"><span class="info-label">Current CTC</span><span class="info-value ${showSalary?'':'salary-hidden'}">${c.salary.cur}</span></div>
+      <div class="info-row"><span class="info-label">Expected CTC</span><span class="info-value ${showSalary?'':'salary-hidden'}">${c.salary.exp}</span></div>
+      ${!showSalary ? '<p style="font-size:11px;color:var(--text-muted);margin-top:6px">Salary hidden — Admin or TA can reveal this</p>' : ''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Process timeline</div>
+      <div class="timeline">
+        ${c.timeline.map(t=>`
+          <div class="tl-item">
+            <div class="tl-icon tl-${t.state}"><i class="ti ti-${t.state==='done'?'check':t.state==='active'?'loader':t.state==='hold'?'pause':'circle'}"></i></div>
+            <div>
+              <div class="tl-stage">${t.label}</div>
+              <div class="tl-detail">${t.detail}</div>
+              <div class="tl-date">${t.date}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      ${c.holdComment ? `<div class="comment-box"><strong>Hold note:</strong> ${c.holdComment}</div>` : ''}
+    </div>
+    ${(currentRole==='Admin'||currentRole==='TA') ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Add comment</div>
+      <textarea class="form-input" placeholder="Add a note or update for this process…"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-primary" style="font-size:12px;padding:6px 13px" onclick="showToast('Comment saved')"><i class="ti ti-check"></i> Save comment</button>
+      </div>
+    </div>` : ''}
+  `;
+
+  document.getElementById('detailOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+function toggleSalary(id, val) {
+  const c = candidates.find(x=>x.id===id);
+  if(c) { c.salaryVisible = val; openDetail(id); renderTable(); }
+}
+
+function setFilter(el, f) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = f;
+  renderTable();
+}
+
+function openNewModal() { document.getElementById('newModal').classList.add('open'); }
+function closeNewModal(e) { if(e.target===document.getElementById('newModal')) closeNewModalDirect(); }
+function closeNewModalDirect() { document.getElementById('newModal').classList.remove('open'); }
+function submitNew() {
+  const name = document.getElementById('f-name').value.trim();
+  const role = document.getElementById('f-role').value.trim();
+  if(!name||!role) { showToast('Please fill in candidate name and role'); return; }
+  const newC = {
+    id: candidates.length+1,
+    name, role,
+    dept: document.getElementById('f-dept').value||'—',
+    org: document.getElementById('f-org').value||'—',
+    exp: (document.getElementById('f-exp').value||'0')+' yrs',
+    relexp: (document.getElementById('f-relexp').value||'0')+' rel',
+    stage:'Screening call completed', stageCode:'active', status:'active',
+    ta: document.getElementById('f-ta').value,
+    taInit: document.getElementById('f-ta').value.split(' ').map(w=>w[0]).join(''),
+    hm:'Pending', days:0,
+    salary:{ cur: document.getElementById('f-curctc').value||'—', exp: document.getElementById('f-expctc').value||'—' },
+    salaryVisible:true,
+    timeline:[{label:'Screening call completed', detail:'Profile captured and added to system', date:'Today', state:'done'}]
+  };
+  candidates.unshift(newC);
+  closeNewModalDirect();
+  updateMetrics();
+  renderTable();
+  showToast('New process created for '+name);
+}
+
+function openRoleModal() { document.getElementById('roleModal').classList.add('open'); }
+function closeRoleModal(e) { if(e.target===document.getElementById('roleModal')) closeRoleModalDirect(); }
+function closeRoleModalDirect() { document.getElementById('roleModal').classList.remove('open'); }
+
+function switchRole(r) {
+  currentRole = r;
+  closeRoleModalDirect();
+  document.querySelectorAll('.role-option').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('ro-'+r).classList.add('selected');
+  document.getElementById('roleLabel').textContent = r==='HM'?'Hiring Manager':r;
+  const avatars = {Admin:{init:'SC',name:'Sachu',role:'Admin'}, TA:{init:'PM',name:'Priya M',role:'TA'}, HM:{init:'KR',name:'Karthik R',role:'Hiring Manager'}};
+  const av = avatars[r];
+  document.getElementById('sidebarAvatar').textContent = av.init;
+  document.getElementById('sidebarName').textContent = av.name;
+  document.getElementById('sidebarRole').textContent = av.role;
+  document.getElementById('newProcessBtn').style.display = ROLES[r].canCreate ? 'inline-flex' : 'none';
+  renderTable();
+  showToast('Viewing as '+av.role);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+updateMetrics();
+renderTable();
+</script>
+</body>
+</html>
