@@ -369,14 +369,41 @@ select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xm
         <div class="fgroup"><label class="flbl">Phone number</label><input class="fi" id="f-phone" placeholder="+91 XXXXX XXXXX"></div>
         <div class="fgroup"><label class="flbl">Current organization</label><input class="fi" id="f-org" placeholder="Company name"></div>
         <div class="fgroup"><label class="flbl">Current designation</label><input class="fi" id="f-desig" placeholder="Current role title"></div>
-        <div class="fgroup"><label class="flbl">Total experience (yrs)</label><input class="fi" id="f-exp" type="number" min="0" placeholder="e.g. 5"></div>
-        <div class="fgroup"><label class="flbl">Relevant experience (yrs)</label><input class="fi" id="f-rexp" type="number" min="0" placeholder="e.g. 3"></div>
+        <div class="fgroup"><label class="flbl">Total experience (yrs)</label><input class="fi" id="f-exp" type="number" min="0" step="0.5" placeholder="e.g. 5"></div>
+        <div class="fgroup"><label class="flbl">Relevant experience (yrs)</label><input class="fi" id="f-rexp" type="number" min="0" step="0.5" placeholder="e.g. 3"></div>
         <div class="fgroup"><label class="flbl">Highest qualification</label><input class="fi" id="f-edu" placeholder="e.g. B.Tech CSE"></div>
-        <div class="fgroup"><label class="flbl">Notice period</label><input class="fi" id="f-np" placeholder="e.g. 30 days"></div>
+        <div class="fgroup">
+          <label class="flbl">Notice period</label>
+          <input class="fi" id="f-np" placeholder="e.g. 30 days, Immediate, 2 months">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--tx2);cursor:pointer">
+            <input type="checkbox" id="f-np-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
+          </label>
+        </div>
         <div class="fgroup"><label class="flbl">Current location</label><input class="fi" id="f-cloc" placeholder="City"></div>
         <div class="fgroup"><label class="flbl">Preferred location</label><input class="fi" id="f-ploc" placeholder="City"></div>
-        <div class="fgroup"><label class="flbl">Current CTC (LPA)</label><input class="fi" id="f-curctc" placeholder="e.g. 8.5"></div>
-        <div class="fgroup"><label class="flbl">Expected CTC range (LPA)</label><input class="fi" id="f-expctc" placeholder="e.g. 10–12"></div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Current CTC (LPA)</label>
+          <input class="fi" id="f-curctc" type="number" min="0" step="0.1" placeholder="e.g. 8.5" style="margin-bottom:8px">
+          <div id="f-ctc-split-toggle" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
+              <input type="checkbox" id="f-ctc-split" onchange="toggleCTCSplit('f')" style="width:14px;height:14px;cursor:pointer"> Show Fixed / Variable split
+            </label>
+          </div>
+          <div id="f-ctc-split-fields" style="display:none;gap:8px;grid-template-columns:1fr 1fr">
+            <div class="fgroup"><label class="flbl">Fixed (LPA)</label><input class="fi" id="f-ctc-fixed" type="number" min="0" step="0.1" placeholder="e.g. 6"></div>
+            <div class="fgroup"><label class="flbl">Variable (LPA)</label><input class="fi" id="f-ctc-variable" type="number" min="0" step="0.1" placeholder="e.g. 2.5"></div>
+          </div>
+        </div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Expected CTC (LPA)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Min</label><input class="fi" id="f-expctc-min" type="number" min="0" step="0.5" placeholder="e.g. 10"></div>
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Max</label><input class="fi" id="f-expctc-max" type="number" min="0" step="0.5" placeholder="e.g. 12"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
+            <input type="checkbox" id="f-expctc-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
+          </label>
+        </div>
         <div class="fgroup"><label class="flbl">WFO confirmation</label><select class="fi" id="f-wfo"><option>Yes</option><option>No</option></select></div>
         <div class="fgroup"><label class="flbl">Rotational shifts ok</label><select class="fi" id="f-shift"><option>Yes</option><option>No</option></select></div>
         <div class="fgroup"><label class="flbl">Source portal</label><select class="fi" id="f-src"><option>Naukri</option><option>LinkedIn</option><option>Indeed</option><option>Referral</option><option>Other</option></select></div>
@@ -407,9 +434,34 @@ select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xm
         <div class="fgroup"><label class="flbl">Current designation</label><input class="fi" id="e-desig"></div>
         <div class="fgroup"><label class="flbl">Total experience (yrs)</label><input class="fi" id="e-exp" type="number"></div>
         <div class="fgroup"><label class="flbl">Relevant experience (yrs)</label><input class="fi" id="e-rexp" type="number"></div>
-        <div class="fgroup"><label class="flbl">Notice period</label><input class="fi" id="e-np"></div>
-        <div class="fgroup"><label class="flbl">Current CTC (LPA)</label><input class="fi" id="e-curctc"></div>
-        <div class="fgroup"><label class="flbl">Expected CTC range (LPA)</label><input class="fi" id="e-expctc"></div>
+        <div class="fgroup">
+          <label class="flbl">Notice period</label>
+          <input class="fi" id="e-np" placeholder="e.g. 30 days, Immediate">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--tx2);cursor:pointer">
+            <input type="checkbox" id="e-np-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
+          </label>
+        </div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Current CTC (LPA)</label>
+          <input class="fi" id="e-curctc" type="number" min="0" step="0.1" placeholder="e.g. 8.5" style="margin-bottom:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
+            <input type="checkbox" id="e-ctc-split" onchange="toggleCTCSplit('e')" style="width:14px;height:14px;cursor:pointer"> Show Fixed / Variable split
+          </label>
+          <div id="e-ctc-split-fields" style="display:none;gap:8px;grid-template-columns:1fr 1fr;margin-top:8px">
+            <div class="fgroup"><label class="flbl">Fixed (LPA)</label><input class="fi" id="e-ctc-fixed" type="number" min="0" step="0.1" placeholder="e.g. 6"></div>
+            <div class="fgroup"><label class="flbl">Variable (LPA)</label><input class="fi" id="e-ctc-variable" type="number" min="0" step="0.1" placeholder="e.g. 2.5"></div>
+          </div>
+        </div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Expected CTC (LPA)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Min</label><input class="fi" id="e-expctc-min" type="number" min="0" step="0.5" placeholder="e.g. 10"></div>
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Max</label><input class="fi" id="e-expctc-max" type="number" min="0" step="0.5" placeholder="e.g. 12"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
+            <input type="checkbox" id="e-expctc-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
+          </label>
+        </div>
       </div>
     </div>
     <div class="mft"><button class="btn" onclick="closeMo('moEdit')">Cancel</button><button class="btn btn-p" onclick="saveEdit()"><i class="ti ti-device-floppy"></i> Save changes</button></div>
@@ -721,22 +773,29 @@ function renderTable() {
 function openDP(id) {
   const c = data.find(x=>x.id===id); if(!c) return;
   const p = PERMS[role];
-  const showSal = p.salary && c.salVis;
+  // showSal: Admin/TA always see salary. HM sees it only if TA/Admin toggled it on.
+  const showSal = (role==='Admin'||role==='TA') ? true : c.salVis;
   document.getElementById('dpName').textContent = c.name;
   document.getElementById('dpMeta').textContent = c.role+' · '+c.dept;
 
-  // Salary toggle — only Admin and TA
+  // Salary toggle — only Admin and TA can control it
   let salBlock = '';
   if(role==='Admin'||role==='TA') {
     salBlock = `<div class="tg-row">
       <div>
         <div style="font-size:12px;font-weight:500">Show salary to hiring manager</div>
-        <div style="font-size:11px;color:var(--txm);margin-top:2px">${c.salVis?'Currently visible to HM':'Currently hidden from HM'}</div>
+        <div style="font-size:11px;color:var(--txm);margin-top:2px" id="sal-status-lbl">${c.salVis?'✓ Currently visible to HM':'✗ Currently hidden from HM'}</div>
       </div>
-      <label class="tg"><input type="checkbox" ${c.salVis?'checked':''} onchange="toggleSal(${c.id},this.checked)"><span class="tg-sl"></span></label>
+      <label class="tg"><input type="checkbox" id="sal-toggle-chk" ${c.salVis?'checked':''} onchange="pendingSalChange(${c.id},this.checked)"><span class="tg-sl"></span></label>
+    </div>
+    <div id="sal-save-row" style="display:none;margin-bottom:8px">
+      <button class="btn btn-p btn-sm" onclick="toggleSal(${c.id})"><i class="ti ti-device-floppy"></i> Save salary visibility</button>
     </div>`;
   } else {
-    salBlock = c.salVis ? '' : `<div class="sal-locked"><i class="ti ti-eye-off" style="margin-right:4px"></i>Salary hidden by TA — contact your TA to reveal</div>`;
+    // HM view — show salary only if salVis is true
+    if(!c.salVis) {
+      salBlock = `<div class="sal-locked"><i class="ti ti-eye-off" style="margin-right:4px"></i>Salary hidden by TA — contact your TA to reveal</div>`;
+    }
   }
 
   const cmts = (c.comments||[]).length
@@ -768,8 +827,9 @@ function openDP(id) {
     <div class="ds">
       <div class="ds-title">Compensation</div>
       ${salBlock}
-      <div class="ir"><span class="il">Current CTC</span><span class="iv ${showSal?'':'sal-hide'}">${c.curctc} LPA</span></div>
-      <div class="ir"><span class="il">Expected CTC range</span><span class="iv ${showSal?'':'sal-hide'}">${c.expctc} LPA</span></div>
+      <div class="ir"><span class="il">Current CTC</span><span class="iv ${showSal?'':'sal-hide'}">${c.curctc} LPA${c.ctcFixed?` (Fixed: ${c.ctcFixed} + Variable: ${c.ctcVariable})`:''}</span></div>
+      <div class="ir"><span class="il">Expected CTC</span><span class="iv ${showSal?'':'sal-hide'}">${c.expctc} LPA${c.expctcNeg?' — Negotiable':''}</span></div>
+      <div class="ir"><span class="il">Notice period</span><span class="iv">${c.np}${c.npNeg?' (Negotiable)':''}</span></div>
     </div>
     <div class="ds">
       <div class="ds-title">Process timeline</div>
@@ -825,10 +885,20 @@ function closeDP() {
   document.getElementById('dp').classList.remove('open');
 }
 
-function toggleSal(id, val) {
-  const c=data.find(x=>x.id===id); if(!c) return;
-  c.salVis=val; saveAll(); openDP(id); renderTable();
-  toast(val?'Salary now visible to HM':'Salary hidden from HM');
+let pendingSalVal = null;
+function pendingSalChange(id, val) {
+  pendingSalVal = val;
+  const lbl = document.getElementById('sal-status-lbl');
+  const row = document.getElementById('sal-save-row');
+  if(lbl) lbl.textContent = val ? '✓ Will be visible to HM (unsaved)' : '✗ Will be hidden from HM (unsaved)';
+  if(row) row.style.display = 'block';
+}
+function toggleSal(id) {
+  const c = data.find(x=>x.id===id); if(!c) return;
+  if(pendingSalVal === null) { toast('No change to save'); return; }
+  c.salVis = pendingSalVal; pendingSalVal = null;
+  saveAll(); openDP(id); renderTable();
+  toast(c.salVis ? 'Salary now visible to HM' : 'Salary hidden from HM');
 }
 
 function saveComment(id) {
@@ -848,7 +918,19 @@ function openEdit(id) {
   g('e-exp',c.exp);   g('e-rexp',c.rexp);
   g('e-cname',c.name);g('e-email',c.email);g('e-phone',c.phone);
   g('e-org',c.org);   g('e-desig',c.desig);g('e-np',c.np);
-  g('e-curctc',c.curctc); g('e-expctc',c.expctc);
+  g('e-curctc',c.curctc);
+  // CTC split
+  const eCtcSplit = document.getElementById('e-ctc-split');
+  if(eCtcSplit) { eCtcSplit.checked = !!(c.ctcFixed||c.ctcVariable); toggleCTCSplit('e'); }
+  g('e-ctc-fixed',c.ctcFixed||''); g('e-ctc-variable',c.ctcVariable||'');
+  // Expected CTC min/max
+  if(c.expctc && c.expctc!=='—') {
+    const parts = c.expctc.split('–');
+    g('e-expctc-min', parts[0]||''); g('e-expctc-max', parts[1]||'');
+  }
+  // Negotiable checkboxes
+  const enp = document.getElementById('e-np-neg'); if(enp) enp.checked = !!c.npNeg;
+  const eexp = document.getElementById('e-expctc-neg'); if(eexp) eexp.checked = !!c.expctcNeg;
   // Rounds
   const er=document.getElementById('e-rounds');
   if(er) er.value=c.rounds||2;
@@ -874,8 +956,17 @@ function saveEdit() {
   if(g('e-exp'))   c.exp   =parseInt(g('e-exp'))||c.exp;
   if(g('e-rexp'))  c.rexp  =parseInt(g('e-rexp'))||c.rexp;
   if(g('e-np'))    c.np    =g('e-np');
+  c.npNeg = document.getElementById('e-np-neg') ? document.getElementById('e-np-neg').checked : c.npNeg;
   if(g('e-curctc'))c.curctc=g('e-curctc');
-  if(g('e-expctc'))c.expctc=g('e-expctc');
+  const eSplit = document.getElementById('e-ctc-split');
+  if(eSplit && eSplit.checked) {
+    c.ctcFixed    = document.getElementById('e-ctc-fixed').value||'';
+    c.ctcVariable = document.getElementById('e-ctc-variable').value||'';
+  }
+  const eMin = document.getElementById('e-expctc-min') ? document.getElementById('e-expctc-min').value : '';
+  const eMax = document.getElementById('e-expctc-max') ? document.getElementById('e-expctc-max').value : '';
+  if(eMin||eMax) c.expctc = eMin&&eMax ? eMin+'–'+eMax : eMin||eMax;
+  c.expctcNeg = document.getElementById('e-expctc-neg') ? document.getElementById('e-expctc-neg').checked : c.expctcNeg;
   saveAll(); closeMo('moEdit'); renderTable(); metrics();
   toast('Changes saved for '+c.name);
 }
@@ -933,7 +1024,11 @@ function saveStatus() {
   toast('Status updated — '+c.name);
 }
 
-// ── New process ──
+function toggleCTCSplit(prefix) {
+  const chk = document.getElementById(prefix+'-ctc-split');
+  const fields = document.getElementById(prefix+'-ctc-split-fields');
+  if(fields) fields.style.display = chk && chk.checked ? 'grid' : 'none';
+}
 function submitNew() {
   const name=(document.getElementById('f-cname').value||'').trim();
   const r=(document.getElementById('f-role').value||'').trim();
@@ -955,10 +1050,14 @@ function submitNew() {
     rexp:parseInt(document.getElementById('f-rexp').value)||0,
     edu:document.getElementById('f-edu').value||'—',
     np:document.getElementById('f-np').value||'—',
+    npNeg: document.getElementById('f-np-neg') ? document.getElementById('f-np-neg').checked : false,
     cloc:document.getElementById('f-cloc').value||'—',
     ploc:document.getElementById('f-ploc').value||'—',
-    curctc:document.getElementById('f-curctc').value||'—',
-    expctc:document.getElementById('f-expctc').value||'—',
+    curctc:(document.getElementById('f-curctc').value||'—'),
+    ctcFixed:(document.getElementById('f-ctc-split')&&document.getElementById('f-ctc-split').checked)?(document.getElementById('f-ctc-fixed').value||''):'',
+    ctcVariable:(document.getElementById('f-ctc-split')&&document.getElementById('f-ctc-split').checked)?(document.getElementById('f-ctc-variable').value||''):'',
+    expctc:(()=>{const mn=document.getElementById('f-expctc-min').value||'';const mx=document.getElementById('f-expctc-max').value||'';return mn&&mx?mn+'–'+mx:mn||mx||'—';})(),
+    expctcNeg: document.getElementById('f-expctc-neg') ? document.getElementById('f-expctc-neg').checked : false,
     wfo:document.getElementById('f-wfo').value,
     shift:document.getElementById('f-shift').value,
     src:document.getElementById('f-src').value,
@@ -968,7 +1067,9 @@ function submitNew() {
     timeline:[{label:'Screening call completed', detail:'Process initiated', date:today(), state:'active', conductor:ta, updatedBy:currentUserLabel()}]
   };
   data.unshift(newC); saveAll();
-  ['f-role','f-dept','f-jloc','f-cname','f-email','f-phone','f-org','f-desig','f-exp','f-rexp','f-edu','f-np','f-cloc','f-ploc','f-curctc','f-expctc','f-slots'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-role','f-dept','f-jloc','f-cname','f-email','f-phone','f-org','f-desig','f-exp','f-rexp','f-edu','f-np','f-cloc','f-ploc','f-curctc','f-ctc-fixed','f-ctc-variable','f-expctc-min','f-expctc-max','f-slots'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-np-neg','f-ctc-split','f-expctc-neg'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  const sf=document.getElementById('f-ctc-split-fields'); if(sf) sf.style.display='none';
   closeMo('moNew'); renderTable(); metrics();
   toast('Process created for '+name);
 }
