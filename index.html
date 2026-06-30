@@ -363,7 +363,7 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
       <div class="content">
         <div class="metrics">
           <div class="mc"><div class="mc-lbl">Active processes</div><div class="mc-val" id="m1">—</div><div class="mc-sub">Across all TAs</div></div>
-          <div class="mc"><div class="mc-lbl">Interviews this week</div><div class="mc-val" id="m2">—</div><div class="mc-sub">L1 &amp; L2 combined</div></div>
+          <div class="mc"><div class="mc-lbl">Scheduled interviews</div><div class="mc-val" id="m2">—</div><div class="mc-sub">Awaiting interview</div></div>
           <div class="mc"><div class="mc-lbl">On hold</div><div class="mc-val" id="m3">—</div><div class="mc-sub">Pending reschedule</div></div>
           <div class="mc"><div class="mc-lbl">Avg. days in pipeline</div><div class="mc-val" id="m4">—</div><div class="mc-sub">Active processes only</div></div>
         </div>
@@ -792,6 +792,14 @@ async function loadProcesses(){
   `).order('created_at',{ascending:false});
   if(error){ toast('Error loading data: '+error.message); return; }
   processes=data||[];
+  // Calculate days in pipeline dynamically from created_at
+  const now=new Date();
+  processes.forEach(p=>{
+    if(p.created_at){
+      const created=new Date(p.created_at);
+      p.days=Math.max(0,Math.floor((now-created)/(1000*60*60*24)));
+    } else { p.days=0; }
+  });
   updateMetrics();
   renderTable();
 }
@@ -1291,7 +1299,7 @@ async function addMember(type){
   const emailEl=document.getElementById(type.toLowerCase()+'-email-in');
   const name=(nameEl?.value||'').trim();
   if(!name){toast('Please enter a name');return;}
-  const {error}=await sb.from('team_members').insert({type,full_name:name,email:emailEl?.value?.trim()||null,added_by:currentUser.id});
+  const {error}=await sb.from('team_members').insert({type,full_name:name,email:emailEl?.value?.trim()||null,added_by:currentProfile.full_name});
   if(error){toast('Error: '+error.message);return;}
   if(nameEl) nameEl.value=''; if(emailEl) emailEl.value='';
   await renderTeam();
@@ -1385,6 +1393,30 @@ async function openTEF(procId) {
   document.getElementById('tefPanelContent').innerHTML = html;
   document.getElementById('tefFullContent').innerHTML = html;
   document.getElementById('tefPanel').style.display = 'flex';
+  // Calculate totals from loaded ratings (for both editable selects and view-only display)
+  setTimeout(()=>calculateTEFTotals(processRounds, interviewerRatings), 50);
+}
+
+function calculateTEFTotals(processRounds, interviewerRatings) {
+  const cols = processRounds.length>0 ? processRounds.map(r=>({hmName:r.hm_name||''})) : [{hmName:'Not assigned yet'}];
+  cols.forEach((r, hi)=>{
+    let total = 0;
+    // Try editable selects first
+    let foundSelect = false;
+    for(let ci=1; ci<=10; ci++){
+      const sel = document.getElementById(`tef-c${ci}-h${hi}`);
+      if(sel){ foundSelect = true; total += parseInt(sel.value)||0; }
+    }
+    // If view-only (no selects), calculate from saved ratings
+    if(!foundSelect){
+      const rating = interviewerRatings.find(rt=>rt.hm_name===r.hmName);
+      if(rating){
+        for(let ci=1; ci<=10; ci++) total += parseInt(rating['c'+ci])||0;
+      }
+    }
+    const totalEl = document.getElementById(`tef-total-h${hi}`);
+    if(totalEl) totalEl.textContent = total>0 ? total : '—';
+  });
 }
 
 function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
@@ -1597,7 +1629,6 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
       </div>
     </div>
   </div>`;
-}
 }
 
 let tefRecommendation = null;
