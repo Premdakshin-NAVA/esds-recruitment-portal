@@ -763,7 +763,7 @@ function renderTable(){
   }
   tb.innerHTML=rows.map(proc=>{
     const c=proc.candidates||{};
-    const taName=teamMembers.TA.find(m=>m.id===proc.assigned_ta)?.full_name||'—';
+    const taName=proc.assigned_ta||'—';
     const hmName=proc.current_hm_name||'Pending';
     return `<tr onclick="openDP('${proc.id}')">
       <td><div class="c-name">${c.name||'—'}</div><div class="c-meta">${c.org||'—'} · ${c.exp||0}y / ${c.rexp||0}y rel</div></td>
@@ -927,7 +927,6 @@ async function saveComment(id){
   if(!txt){toast('Please type a comment');return;}
   const {error}=await sb.from('comments').insert({
     process_id:id,
-    by_id:currentUser.id,
     by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
     text:txt
   });
@@ -961,10 +960,7 @@ async function saveEdit(){
   const procUp={role:g('e-role')||proc.role, dept:g('e-dept')||proc.dept, rounds:parseInt(g('e-rounds'))||proc.rounds, current_hm_name:g('e-hm')||proc.current_hm_name};
   // Find TA id
   const taName=document.getElementById('e-ta')?.value;
-  if(taName){
-    const tm=teamMembers.TA.find(m=>m.full_name===taName);
-    if(tm) procUp.assigned_ta=tm.id;
-  }
+  if(taName) procUp.assigned_ta=taName;
   const {error:pe}=await sb.from('processes').update(procUp).eq('id',editId);
   if(pe){toast('Error: '+pe.message);return;}
   // Update candidate
@@ -1053,7 +1049,6 @@ async function saveStatus(){
     label:selStageVal,
     detail,
     conductor_name:conductor,
-    updated_by:currentUser.id,
     updated_by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
     state:tlSt
   });
@@ -1062,7 +1057,6 @@ async function saveStatus(){
   if(comment){
     await sb.from('comments').insert({
       process_id:statusId,
-      by_id:currentUser.id,
       by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
       text:comment
     });
@@ -1083,7 +1077,6 @@ async function submitNew(){
   const role=(document.getElementById('f-role').value||'').trim();
   if(!name||!role){toast('Candidate name and role are required');return;}
   const taName=document.getElementById('f-ta')?.value||'';
-  const taRow=teamMembers.TA.find(m=>m.full_name===taName);
   const expMin=parseFloat(document.getElementById('f-expmin').value)||null;
   const expMax=parseFloat(document.getElementById('f-expmax').value)||null;
   const ctcSplit=document.getElementById('f-ctc-split')?.checked;
@@ -1111,8 +1104,7 @@ async function submitNew(){
     ctc_variable:ctcSplit?parseFloat(document.getElementById('f-ctc-var').value)||null:null,
     expctc_min:expMin,
     expctc_max:expMax,
-    expctc_neg:document.getElementById('f-expctc-neg')?.checked||false,
-    created_by:currentUser.id
+    expctc_neg:document.getElementById('f-expctc-neg')?.checked||false
   }).select().single();
   if(ce){toast('Error creating candidate: '+ce.message);return;}
 
@@ -1123,12 +1115,11 @@ async function submitNew(){
     etype:document.getElementById('f-etype').value,
     jloc:document.getElementById('f-jloc').value||null,
     rounds:parseInt(document.getElementById('f-rounds').value)||2,
-    assigned_ta:taRow?.id||null,
+    assigned_ta: taName||null,
     stage:'Screening call completed',
     status:'active',
     sal_visible:true,
-    days:0,
-    created_by:currentUser.id
+    days:0
   }).select().single();
   if(pe){toast('Error creating process: '+pe.message);return;}
 
@@ -1138,7 +1129,6 @@ async function submitNew(){
     label:'Screening call completed',
     detail:'Process initiated',
     conductor_name:currentProfile.full_name,
-    updated_by:currentUser.id,
     updated_by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
     state:'active'
   });
