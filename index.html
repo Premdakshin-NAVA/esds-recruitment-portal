@@ -6,7 +6,7 @@
 <title>Talent Nexus — ESDS</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -612,7 +612,20 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
 // ── SUPABASE INIT ──
 const SUPA_URL  = 'https://txzrqrbixxrkaxdrsdnm.supabase.co';
 const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4enJxcmJpeHhya2F4ZHJzZG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc1MDUsImV4cCI6MjA5ODM3MzUwNX0.tUzBPvNnfXub234LYyTN5jvhcKB5PP6WQ8ogghCEw3c';
-const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+
+let sb = null;
+function initSupabase() {
+  if(typeof supabase === 'undefined' || !supabase.createClient) {
+    return false;
+  }
+  try {
+    sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+    return true;
+  } catch(e) {
+    console.error('Supabase init failed:', e);
+    return false;
+  }
+}
 
 // ── PERMISSION MATRIX ──
 const PERMS = {
@@ -688,11 +701,23 @@ async function doLogin(){
   const email=(document.getElementById('loginEmail').value||'').trim();
   const pwd=(document.getElementById('loginPwd').value||'').trim();
   if(!email||!pwd){ showLoginErr('Please enter your email and password'); return; }
+  // Ensure Supabase is ready
+  if(!sb){
+    if(!initSupabase()){
+      showLoginErr('Server connection not ready. Please refresh the page and try again.');
+      return;
+    }
+  }
   const btn=document.getElementById('loginBtn');
   btn.disabled=true; btn.textContent='Signing in…';
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pwd});
-  if(error){ showLoginErr(error.message); btn.disabled=false; btn.textContent='Sign in'; return; }
-  await initApp(data.user);
+  try {
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pwd});
+    if(error){ showLoginErr(error.message); btn.disabled=false; btn.textContent='Sign in'; return; }
+    await initApp(data.user);
+  } catch(e) {
+    showLoginErr('Login failed: '+(e.message||'unknown error')+'. Please refresh and try again.');
+    btn.disabled=false; btn.textContent='Sign in';
+  }
 }
 
 async function doLogout(){
@@ -1729,10 +1754,30 @@ function expandTEF() {
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded',async()=>{
-  const {data:{session}}=await sb.auth.getSession();
-  if(session?.user){
-    await initApp(session.user);
+  // Initialize Supabase — retry if library not yet loaded
+  let ready = initSupabase();
+  if(!ready) {
+    // Wait briefly and retry (CDN may still be loading)
+    for(let i=0; i<10 && !ready; i++) {
+      await new Promise(r=>setTimeout(r,300));
+      ready = initSupabase();
+    }
   }
+  if(!ready) {
+    showLoginErr('Could not connect to the server. Please refresh the page or check your internet connection.');
+    return;
+  }
+
+  // Restore session if present
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    if(session?.user) {
+      await initApp(session.user);
+    }
+  } catch(e) {
+    console.error('Session check failed:', e);
+  }
+
   // Enter key on login
   document.getElementById('loginPwd').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPwd').focus();});
