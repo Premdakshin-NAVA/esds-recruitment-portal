@@ -238,7 +238,37 @@ select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xm
 .perm-box{background:var(--warn-bg);border:1px solid #fde68a;border-radius:var(--r);padding:11px 13px;font-size:12px;color:var(--warn-tx);display:flex;align-items:flex-start;gap:7px;margin-bottom:16px}
 .perm-box i{font-size:15px;flex-shrink:0;margin-top:1px}
 
-/* ── TOAST ── */
+/* ── TEF STYLES ── */
+.tef-section{margin-bottom:24px}
+.tef-section-title{font-size:12px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;padding:8px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r) var(--r) 0 0;margin-bottom:0}
+.tef-body{border:1px solid var(--bdr);border-top:none;border-radius:0 0 var(--r) var(--r);padding:16px}
+.tef-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tef-field{display:flex;flex-direction:column;gap:4px}
+.tef-label{font-size:11px;font-weight:500;color:var(--txm)}
+.tef-val{font-size:13px;font-weight:500;color:var(--tx);padding:7px 10px;background:var(--surf2);border-radius:var(--r);border:1px solid var(--bdr)}
+.tef-input{padding:7px 10px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--bg);font-size:13px;color:var(--tx);font-family:var(--font);width:100%;outline:none}
+.tef-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
+.tef-rating-table{width:100%;border-collapse:collapse;font-size:13px}
+.tef-rating-table th{padding:8px 10px;background:var(--surf2);border:1px solid var(--bdr);font-size:11px;font-weight:600;color:var(--txm);text-align:center;white-space:nowrap}
+.tef-rating-table th:first-child{text-align:left;width:30px}
+.tef-rating-table th:nth-child(2){text-align:left}
+.tef-rating-table td{padding:8px 10px;border:1px solid var(--bdr);vertical-align:middle}
+.tef-rating-table td:first-child{text-align:center;color:var(--txm);font-size:12px}
+.tef-rating-table td:nth-child(2){font-size:13px}
+.tef-rating-table tr:nth-child(even) td{background:var(--surf2)}
+.tef-rating-table tfoot td{background:var(--acc-bg);font-weight:600;color:var(--acc-tx)}
+.rating-sel{padding:5px 8px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--bg);font-size:12px;font-family:var(--font);width:100%;outline:none;text-align:center;cursor:pointer}
+.rating-sel:focus{border-color:var(--acc)}
+.rating-display{text-align:center;font-weight:600;font-size:14px;color:var(--acc-tx)}
+.score-badge{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--acc-bg);color:var(--acc-tx);font-weight:600;font-size:14px}
+.tef-read-only .tef-input,.tef-read-only .rating-sel{background:var(--surf2);cursor:default;pointer-events:none;color:var(--tx2)}
+.rec-btn{padding:8px 20px;border-radius:var(--r);border:1px solid var(--bdr);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.rec-y{background:var(--ok-bg);color:var(--ok-tx);border-color:#bbf7d0}
+.rec-y.active,.rec-y:hover{background:#16a34a;color:#fff;border-color:#16a34a}
+.rec-n{background:var(--err-bg);color:var(--err-tx);border-color:#fecaca}
+.rec-n.active,.rec-n:hover{background:#dc2626;color:#fff;border-color:#dc2626}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transition:transform .22s ease;white-space:nowrap;pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0)}
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -533,6 +563,39 @@ select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xm
     </div>
     <div class="mft"><button class="btn" onclick="closeMo('moStatus')">Cancel</button><button class="btn btn-p" onclick="saveStatus()"><i class="ti ti-device-floppy"></i> Save update</button></div>
   </div>
+</div>
+
+<!-- ── TEF FULL PAGE OVERLAY ── -->
+<div id="tefPage" style="display:none;position:fixed;inset:0;background:var(--surf);z-index:400;overflow-y:auto;padding:32px">
+  <div style="max-width:860px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+      <div>
+        <div style="font-size:18px;font-weight:600">Talent Evaluation Form</div>
+        <div style="font-size:13px;color:var(--txm);margin-top:2px">ESDS Software Solution Pvt. Ltd.</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-p" onclick="saveTEF()"><i class="ti ti-device-floppy"></i> Save TEF</button>
+        <button class="btn" onclick="closeTEFPage()"><i class="ti ti-x"></i> Close</button>
+      </div>
+    </div>
+    <div id="tefFullContent"></div>
+  </div>
+</div>
+
+<!-- ── TEF PANEL (inside detail panel) ── -->
+<div id="tefPanel" style="display:none;position:fixed;top:0;right:0;width:600px;height:100vh;background:var(--surf);border-left:1px solid var(--bdr);z-index:202;display:none;flex-direction:column">
+  <div style="padding:14px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div>
+      <div style="font-size:15px;font-weight:600">Talent Evaluation Form</div>
+      <div style="font-size:12px;color:var(--txm);margin-top:2px" id="tef-panel-meta"></div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-p btn-sm" onclick="saveTEF()"><i class="ti ti-device-floppy"></i> Save</button>
+      <button class="ib" title="Expand to full page" onclick="expandTEF()"><i class="ti ti-maximize"></i></button>
+      <button class="ib" onclick="closeTEFPanel()"><i class="ti ti-x"></i></button>
+    </div>
+  </div>
+  <div style="padding:20px;flex:1;overflow-y:auto" id="tefPanelContent"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -878,6 +941,10 @@ async function openDP(id){
   // Action buttons
   const acts=document.getElementById('dpActs');
   acts.innerHTML='';
+  // TEF button — always visible for all roles
+  const tefBtn=document.createElement('button'); tefBtn.className='btn';
+  tefBtn.innerHTML='<i class="ti ti-clipboard-text"></i> TEF';
+  tefBtn.onclick=()=>openTEF(id); acts.appendChild(tefBtn);
   if(p.status){
     const sb2=document.createElement('button'); sb2.className='btn btn-p';
     sb2.innerHTML='<i class="ti ti-arrows-exchange"></i> Update status';
@@ -1227,6 +1294,343 @@ function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── TEF ──
+const COMPETENCIES = [
+  'Passion and Motivation',
+  'Commitment and Enthusiasm',
+  'Growth and Continuous Improvement',
+  'Adaptability and Resilience',
+  'Collaboration and Communication',
+  'Leadership and Accountability',
+  'Empathy and Humility',
+  'Strategic and Analytical Thinking',
+  'Problem Solving and Conflict Management',
+  'Integrity and Risk-Taking'
+];
+
+let tefProcessId = null;
+let tefData = {};
+let tefReadOnly = false;
+
+async function openTEF(procId) {
+  tefProcessId = procId;
+  const proc = processes.find(p=>p.id===procId); if(!proc) return;
+  const c = proc.candidates || {};
+  const p = perm();
+
+  // Load existing TEF data if any
+  const {data:existing} = await sb.from('tef_hr').select('*').eq('process_id',procId).single();
+  tefData = existing || {};
+
+  // Load tef_ratings for all interviewers
+  const {data:ratings} = await sb.from('tef_ratings').select('*').eq('round_id', procId);
+  const interviewerRatings = ratings || [];
+
+  // HM can only fill their own ratings section
+  // TA/Admin can fill everything
+  tefReadOnly = false;
+
+  // Build TEF HTML
+  const html = buildTEFHTML(proc, c, interviewerRatings, p);
+  document.getElementById('tef-panel-meta').textContent = (c.name||'—') + ' · ' + (proc.role||'—');
+  document.getElementById('tefPanelContent').innerHTML = html;
+
+  // Show panel
+  document.getElementById('tefPanel').style.display = 'flex';
+  // Also update tefFullContent for expand mode
+  document.getElementById('tefFullContent').innerHTML = html;
+}
+
+function buildTEFHTML(proc, c, interviewerRatings, p) {
+  const isHM = activeRole === 'hm';
+  const canEditAll = !isHM;
+  const d = tefData;
+
+  // Auto-populate candidate fields
+  const expCtc = c.expctc_min&&c.expctc_max ? c.expctc_min+'–'+c.expctc_max+' LPA'+(c.expctc_neg?' (Neg.)':'') : '—';
+  const curCtc = c.curctc ? c.curctc+' LPA'+(c.ctc_fixed?' (F:'+c.ctc_fixed+' V:'+c.ctc_variable+')':'') : '—';
+
+  // Build interviewer columns (up to 5)
+  const hmNames = Array.from({length:5}, (_,i) => {
+    const r = interviewerRatings[i];
+    return r ? r.hm_name : (i===0 && activeRole==='hm' ? currentProfile.full_name : '');
+  });
+
+  const ratingRows = COMPETENCIES.map((comp, ci) => {
+    const ratingCells = hmNames.map((hm, hi) => {
+      const r = interviewerRatings[hi];
+      const val = r ? (r['c'+(ci+1)]||'') : '';
+      const canEdit = (activeRole==='hm' && hi===0) || canEditAll;
+      if(canEdit) {
+        return `<td><select class="rating-sel" id="tef-c${ci+1}-h${hi}" onchange="updateTEFScore()" ${!hm&&!canEditAll?'disabled':''}>
+          <option value="">—</option>
+          <option value="5" ${val==5?'selected':''}>5 — Excellent</option>
+          <option value="4" ${val==4?'selected':''}>4 — Good</option>
+          <option value="3" ${val==3?'selected':''}>3 — Satisfactory</option>
+          <option value="2" ${val==2?'selected':''}>2 — Average</option>
+          <option value="1" ${val==1?'selected':''}>1 — Not Acceptable</option>
+        </select></td>`;
+      }
+      return `<td class="rating-display">${val||'—'}</td>`;
+    }).join('');
+    return `<tr><td>${ci+1}</td><td>${comp}</td>${ratingCells}</tr>`;
+  }).join('');
+
+  // Total scores row
+  const totalCells = hmNames.map((_,hi) => {
+    const r = interviewerRatings[hi];
+    if(!r) return `<td style="text-align:center" id="tef-total-h${hi}">—</td>`;
+    const total = Array.from({length:10},(_,ci)=>parseInt(r['c'+(ci+1)])||0).reduce((a,b)=>a+b,0);
+    return `<td style="text-align:center;font-weight:600" id="tef-total-h${hi}">${total||'—'}</td>`;
+  }).join('');
+
+  const interviewerNameCells = hmNames.map((name,hi) => {
+    if(canEditAll || (activeRole==='hm'&&hi===0)) {
+      return `<td><input class="tef-input" id="tef-hm-name-${hi}" value="${name}" placeholder="Interviewer ${hi+1} name" style="min-width:120px"></td>`;
+    }
+    return `<td style="font-size:13px;font-weight:500">${name||'—'}</td>`;
+  }).join('');
+
+  const hmColHeaders = hmNames.map((name,hi) =>
+    `<th style="min-width:110px">${name||'Interviewer '+(hi+1)}</th>`
+  ).join('');
+
+  return `
+  <!-- Section A: Candidate Info (auto-populated) -->
+  <div class="tef-section">
+    <div class="tef-section-title">Section A — Candidate Information <span style="font-weight:400;color:var(--ok-tx)">(auto-populated)</span></div>
+    <div class="tef-body">
+      <div class="tef-grid">
+        <div class="tef-field"><div class="tef-label">Candidate name</div><div class="tef-val">${c.name||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Highest qualification</div><div class="tef-val">${c.edu||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Date</div><div class="tef-val">${today()}</div></div>
+        <div class="tef-field"><div class="tef-label">Current company</div><div class="tef-val">${c.org||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Role assessed for</div><div class="tef-val">${proc.role||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Department</div><div class="tef-val">${proc.dept||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Current location</div><div class="tef-val">${c.cloc||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Proposed location</div><div class="tef-val">${c.ploc||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Total experience</div><div class="tef-val">${c.exp||0} yrs</div></div>
+        <div class="tef-field"><div class="tef-label">Relevant experience</div><div class="tef-val">${c.rexp||0} yrs</div></div>
+        <div class="tef-field"><div class="tef-label">Source of hiring</div><div class="tef-val">${c.src||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Current CTC</div><div class="tef-val">${curCtc}</div></div>
+        <div class="tef-field"><div class="tef-label">Expected CTC</div><div class="tef-val">${expCtc}</div></div>
+        <div class="tef-field"><div class="tef-label">Notice period</div><div class="tef-val">${c.np||'—'}${c.np_neg?' (Negotiable)':''}</div></div>
+      </div>
+      <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="tef-field">
+          <div class="tef-label">New / Replacement</div>
+          ${canEditAll ? `<select class="tef-input" id="tef-new-rep"><option ${(d.new_replacement||'')==='New'?'selected':''}>New</option><option ${(d.new_replacement||'')==='Replacement'?'selected':''}>Replacement</option></select>`
+          : `<div class="tef-val">${d.new_replacement||'—'}</div>`}
+        </div>
+        <div class="tef-field" style="grid-column:span 2">
+          <div class="tef-label">Replacement name (if applicable)</div>
+          ${canEditAll ? `<input class="tef-input" id="tef-rep-name" value="${d.replacement_name||''}" placeholder="Name of person being replaced">`
+          : `<div class="tef-val">${d.replacement_name||'—'}</div>`}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section B: Competency Rating -->
+  <div class="tef-section">
+    <div class="tef-section-title">Section B — Competency Assessment
+      <span style="font-weight:400;font-size:11px;margin-left:8px">Rating: 5=Excellent, 4=Good, 3=Satisfactory, 2=Average, 1=Not Acceptable</span>
+    </div>
+    <div class="tef-body" style="padding:0;overflow-x:auto">
+      <table class="tef-rating-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Competency</th>
+            ${hmColHeaders}
+          </tr>
+        </thead>
+        <tbody>${ratingRows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="font-weight:600;padding:10px">Total Score (max 50)</td>
+            ${totalCells}
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section C: Interviewer Details & Comments -->
+  <div class="tef-section">
+    <div class="tef-section-title">Section C — Interviewer Details &amp; Comments</div>
+    <div class="tef-body">
+      <div style="margin-bottom:14px">
+        <div class="tef-label" style="margin-bottom:8px">Interviewer names</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          ${interviewerNameCells}
+        </div>
+      </div>
+      <div class="tef-field">
+        <div class="tef-label">Interviewer comments</div>
+        <textarea class="tef-input" id="tef-int-comments" placeholder="Behavioural and technical feedback based on the interview…" ${isHM?'':''}>${d.interviewer_comments||''}</textarea>
+      </div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="tef-field">
+          <div class="tef-label">One reason to hire this candidate</div>
+          <textarea class="tef-input" id="tef-hire-reason" placeholder="Key reason to hire…" style="min-height:60px">${d.hire_reason||''}</textarea>
+        </div>
+        <div class="tef-field">
+          <div class="tef-label">One reason not to hire this candidate</div>
+          <textarea class="tef-input" id="tef-no-hire-reason" placeholder="Key concern…" style="min-height:60px">${d.no_hire_reason||''}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section D: HR Interviewer -->
+  <div class="tef-section">
+    <div class="tef-section-title">Section D — HR Interviewer Assessment ${isHM?'<span style="font-weight:400;color:var(--warn-tx)">(filled by HR/TA)</span>':''}</div>
+    <div class="tef-body ${isHM?'tef-read-only':''}">
+      <div class="tef-field" style="margin-bottom:12px">
+        <div class="tef-label">HR Interviewer name</div>
+        ${canEditAll ? `<input class="tef-input" id="tef-hr-name" value="${d.hr_name||currentProfile.full_name||''}" placeholder="HR interviewer name">` : `<div class="tef-val">${d.hr_name||'—'}</div>`}
+      </div>
+      <div class="tef-field" style="margin-bottom:12px">
+        <div class="tef-label">Strengths</div>
+        <textarea class="tef-input" id="tef-strengths" placeholder="Key strengths observed…" ${isHM?'readonly':''}>${d.strengths||''}</textarea>
+      </div>
+      <div class="tef-field" style="margin-bottom:12px">
+        <div class="tef-label">Weaknesses / Areas to improve</div>
+        <textarea class="tef-input" id="tef-weaknesses" placeholder="Areas that need development…" ${isHM?'readonly':''}>${d.weaknesses||''}</textarea>
+      </div>
+      <div class="tef-field" style="margin-bottom:12px">
+        <div class="tef-label">Overall observation</div>
+        <textarea class="tef-input" id="tef-observation" placeholder="Overall assessment of the candidate…" ${isHM?'readonly':''}>${d.overall_observation||''}</textarea>
+      </div>
+      <div class="tef-field">
+        <div class="tef-label">Reason to hire (HR perspective)</div>
+        <textarea class="tef-input" id="tef-hr-hire-reason" placeholder="HR's reason to recommend hiring…" ${isHM?'readonly':''}>${d.reason_to_hire||''}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section E: TA Only -->
+  <div class="tef-section">
+    <div class="tef-section-title">Section E — For TA Purpose Only ${isHM?'<span style="font-weight:400;color:var(--warn-tx)">(filled by TA/Admin only)</span>':''}</div>
+    <div class="tef-body ${isHM?'tef-read-only':''}">
+      <div class="tef-grid" style="margin-bottom:14px">
+        <div class="tef-field">
+          <div class="tef-label">Designation &amp; Grade</div>
+          <input class="tef-input" id="tef-desig" value="${d.designation||''}" placeholder="e.g. Software Engineer L2" ${isHM?'readonly':''}>
+        </div>
+        <div class="tef-field">
+          <div class="tef-label">Reporting to</div>
+          <input class="tef-input" id="tef-reporting" value="${d.reporting||''}" placeholder="Reporting manager name" ${isHM?'readonly':''}>
+        </div>
+        <div class="tef-field">
+          <div class="tef-label">Department</div>
+          <input class="tef-input" id="tef-ta-dept" value="${d.department||proc.dept||''}" ${isHM?'readonly':''}>
+        </div>
+        <div class="tef-field">
+          <div class="tef-label">Location</div>
+          <input class="tef-input" id="tef-ta-loc" value="${d.location||proc.jloc||''}" ${isHM?'readonly':''}>
+        </div>
+      </div>
+      <div class="tef-field">
+        <div class="tef-label" style="margin-bottom:10px">Hiring recommendation</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <button class="rec-btn rec-y ${d.recommendation===true?'active':''}" id="rec-y" onclick="setRec(true)" ${isHM?'disabled':''}>✓ Yes — Hire</button>
+          <button class="rec-btn rec-n ${d.recommendation===false?'active':''}" id="rec-n" onclick="setRec(false)" ${isHM?'disabled':''}>✗ No — Don't Hire</button>
+          <span id="rec-label" style="font-size:13px;color:var(--txm)">${d.recommendation===true?'Recommended for hire':d.recommendation===false?'Not recommended':''}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+let tefRecommendation = null;
+
+function setRec(val) {
+  tefRecommendation = val;
+  document.querySelectorAll('.rec-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(val?'rec-y':'rec-n')?.classList.add('active');
+  const lbl = document.getElementById('rec-label');
+  if(lbl) lbl.textContent = val ? 'Recommended for hire' : 'Not recommended';
+}
+
+function updateTEFScore() {
+  // Recalculate totals per interviewer column
+  for(let hi=0; hi<5; hi++) {
+    let total = 0;
+    for(let ci=1; ci<=10; ci++) {
+      const sel = document.getElementById(`tef-c${ci}-h${hi}`);
+      if(sel) total += parseInt(sel.value)||0;
+    }
+    const totalEl = document.getElementById(`tef-total-h${hi}`);
+    if(totalEl) totalEl.textContent = total > 0 ? total : '—';
+  }
+}
+
+async function saveTEF() {
+  if(!tefProcessId) return;
+
+  // Save ratings per interviewer
+  for(let hi=0; hi<5; hi++) {
+    const nameEl = document.getElementById(`tef-hm-name-${hi}`);
+    if(!nameEl || !nameEl.value.trim()) continue;
+    const hmName = nameEl.value.trim();
+    const ratings = {};
+    for(let ci=1; ci<=10; ci++) {
+      const sel = document.getElementById(`tef-c${ci}-h${hi}`);
+      if(sel && sel.value) ratings['c'+ci] = parseInt(sel.value);
+    }
+    if(Object.keys(ratings).length === 0) continue;
+    // Upsert rating row
+    await sb.from('tef_ratings').upsert({
+      round_id: tefProcessId,
+      hm_name: hmName,
+      ...ratings,
+      comments: document.getElementById('tef-int-comments')?.value||null,
+      hire_reason: document.getElementById('tef-hire-reason')?.value||null,
+      no_hire_reason: document.getElementById('tef-no-hire-reason')?.value||null
+    }, {onConflict:'round_id,hm_name'});
+  }
+
+  // Save HR/TA section
+  const hrPayload = {
+    process_id: tefProcessId,
+    hr_name: document.getElementById('tef-hr-name')?.value||null,
+    new_replacement: document.getElementById('tef-new-rep')?.value||null,
+    replacement_name: document.getElementById('tef-rep-name')?.value||null,
+    interviewer_comments: document.getElementById('tef-int-comments')?.value||null,
+    hire_reason: document.getElementById('tef-hire-reason')?.value||null,
+    no_hire_reason: document.getElementById('tef-no-hire-reason')?.value||null,
+    strengths: document.getElementById('tef-strengths')?.value||null,
+    weaknesses: document.getElementById('tef-weaknesses')?.value||null,
+    overall_observation: document.getElementById('tef-observation')?.value||null,
+    reason_to_hire: document.getElementById('tef-hr-hire-reason')?.value||null,
+    designation: document.getElementById('tef-desig')?.value||null,
+    reporting: document.getElementById('tef-reporting')?.value||null,
+    department: document.getElementById('tef-ta-dept')?.value||null,
+    location: document.getElementById('tef-ta-loc')?.value||null,
+    recommendation: tefRecommendation
+  };
+
+  const {error} = await sb.from('tef_hr').upsert(hrPayload, {onConflict:'process_id'});
+  if(error) { toast('Error saving TEF: '+error.message); return; }
+  toast('TEF saved successfully');
+}
+
+function closeTEFPanel() {
+  document.getElementById('tefPanel').style.display = 'none';
+}
+
+function closeTEFPage() {
+  document.getElementById('tefPage').style.display = 'none';
+}
+
+function expandTEF() {
+  // Sync content to full page
+  document.getElementById('tefFullContent').innerHTML = document.getElementById('tefPanelContent').innerHTML;
+  document.getElementById('tefPage').style.display = 'block';
 }
 
 // ── INIT ──
