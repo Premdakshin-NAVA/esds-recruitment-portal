@@ -1,218 +1,1254 @@
--- ================================================
--- TALENT NEXUS — Supabase Schema
--- Run this in Supabase SQL Editor (all at once)
--- ================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talent Nexus — ESDS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f5f4;--surf:#fff;--surf2:#fafaf9;
+  --bdr:#e5e5e3;--bdrs:#d4d4d1;
+  --tx:#1a1a18;--tx2:#57574f;--txm:#9b9b90;
+  --acc:#2563eb;--acc-bg:#eff6ff;--acc-tx:#1d4ed8;
+  --ok-bg:#f0fdf4;--ok-tx:#15803d;
+  --warn-bg:#fffbeb;--warn-tx:#b45309;
+  --err-bg:#fef2f2;--err-tx:#b91c1c;
+  --pro-bg:#f5f3ff;--pro-tx:#6d28d9;
+  --r:8px;--font:'Inter',sans-serif
+}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5;height:100vh;overflow:hidden}
 
--- 1. USER PROFILES (extends Supabase auth.users)
-create table public.profiles (
-  id uuid references auth.users(id) on delete cascade primary key,
-  full_name text not null,
-  email text not null,
-  role text not null check (role in ('admin','ta','hm','developer')),
-  is_active boolean default true,
-  created_at timestamptz default now()
-);
+/* ── LOGIN SCREEN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%)}
+.login-box{background:var(--surf);border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-logo-icon{width:36px;height:36px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.login-logo-icon i{color:#fff;font-size:19px}
+.login-title{font-size:20px;font-weight:600}
+.login-sub{font-size:13px;color:var(--txm);margin-top:1px}
+.login-field{margin-bottom:14px}
+.login-lbl{font-size:12px;font-weight:500;color:var(--tx2);margin-bottom:5px;display:block}
+.login-input{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--bg);font-size:13px;color:var(--tx);font-family:var(--font);outline:none}
+.login-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.login-btn{width:100%;padding:11px;border-radius:var(--r);background:var(--acc);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:6px;transition:background .15s}
+.login-btn:hover{background:#1d4ed8}
+.login-btn:disabled{background:#93c5fd;cursor:not-allowed}
+.login-err{background:var(--err-bg);color:var(--err-tx);border:1px solid #fecaca;border-radius:var(--r);padding:10px 12px;font-size:13px;margin-bottom:14px;display:none}
+.login-footer{font-size:11px;color:var(--txm);text-align:center;margin-top:20px}
 
--- 2. TEAM MEMBERS
-create table public.team_members (
-  id uuid default gen_random_uuid() primary key,
-  type text not null check (type in ('TA','HM')),
-  full_name text not null,
-  email text,
-  added_by uuid references public.profiles(id),
-  created_at timestamptz default now()
-);
+/* ── APP SHELL ── */
+.app{display:flex;height:100vh;display:none}
+.sb{width:215px;min-width:215px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column}
+.sb-logo{padding:16px;border-bottom:1px solid var(--bdr)}
+.sb-mark{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.sb-icon{width:28px;height:28px;background:var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.sb-icon i{color:#fff;font-size:15px}
+.sb-title{font-size:14px;font-weight:600}
+.sb-sub{font-size:11px;color:var(--txm);margin-left:36px}
+.nav{padding:8px 0;flex:1;overflow-y:auto}
+.nav-sec{font-size:10px;font-weight:600;color:var(--txm);padding:10px 16px 4px;text-transform:uppercase;letter-spacing:.07em}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:13px;color:var(--tx2);cursor:pointer;transition:all .12s}
+.nav-item:hover{background:var(--bg);color:var(--tx)}
+.nav-item.active{background:var(--acc-bg);color:var(--acc-tx);font-weight:500;border-right:2px solid var(--acc)}
+.nav-item i{font-size:16px}
+.sb-user{padding:12px 16px;border-top:1px solid var(--bdr)}
+.u-chip{display:flex;align-items:center;gap:9px;cursor:pointer}
+.u-chip:hover .u-name{color:var(--acc-tx)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--acc-bg);color:var(--acc-tx);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.u-name{font-size:13px;font-weight:500}
+.u-role{font-size:11px;color:var(--txm)}
 
--- 3. CANDIDATES
-create table public.candidates (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  email text,
-  phone text,
-  org text,
-  desig text,
-  exp numeric,
-  rexp numeric,
-  edu text,
-  np text,
-  np_neg boolean default false,
-  cloc text,
-  ploc text,
-  wfo text,
-  shift text,
-  src text,
-  slots text,
-  curctc numeric,
-  ctc_fixed numeric,
-  ctc_variable numeric,
-  expctc_min numeric,
-  expctc_max numeric,
-  expctc_neg boolean default false,
-  created_by uuid references public.profiles(id),
-  created_at timestamptz default now()
-);
+/* ── DEVELOPER TOGGLE BAR ── */
+.dev-bar{background:#1e1b4b;color:#c7d2fe;padding:6px 16px;font-size:11px;display:none;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.dev-bar-label{display:flex;align-items:center;gap:6px;font-weight:500}
+.dev-bar-label i{font-size:13px}
+.dev-roles{display:flex;gap:4px}
+.dev-role-btn{padding:3px 10px;border-radius:20px;border:1px solid #4338ca;background:transparent;color:#c7d2fe;font-size:11px;cursor:pointer;font-family:var(--font);transition:all .12s}
+.dev-role-btn:hover{background:#312e81}
+.dev-role-btn.active{background:var(--acc);color:#fff;border-color:var(--acc)}
 
--- 4. PROCESSES
-create table public.processes (
-  id uuid default gen_random_uuid() primary key,
-  candidate_id uuid references public.candidates(id) on delete cascade,
-  role text not null,
-  dept text,
-  etype text default 'Full time',
-  jloc text,
-  rounds integer default 2,
-  assigned_ta uuid references public.profiles(id),
-  current_hm_name text,
-  stage text default 'Screening call completed',
-  status text default 'active' check (status in ('active','scheduled','hold','cancelled','closed-selected','closed-rejected')),
-  sal_visible boolean default true,
-  days integer default 0,
-  created_by uuid references public.profiles(id),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{padding:13px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:var(--surf);flex-shrink:0}
+.pg-title{font-size:16px;font-weight:600}
+.pg-sub{font-size:12px;color:var(--txm);margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid var(--bdrs);background:var(--surf);font-size:13px;cursor:pointer;color:var(--tx);font-family:var(--font);font-weight:500;transition:all .12s;white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn i{font-size:15px}
+.btn-p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn-p:hover{background:#1d4ed8;border-color:#1d4ed8}
+.btn-sm{padding:5px 11px;font-size:12px}
 
--- 5. PROCESS ROUNDS
-create table public.process_rounds (
-  id uuid default gen_random_uuid() primary key,
-  process_id uuid references public.processes(id) on delete cascade,
-  round_number integer not null,
-  round_name text not null,
-  scheduled_at timestamptz,
-  outcome text check (outcome in ('selected','rejected','noshow','pending')),
-  created_at timestamptz default now()
-);
+/* ── PAGES ── */
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.active{display:flex}
+.content{padding:20px 22px;flex:1;overflow-y:auto}
 
--- 6. ROUND INTERVIEWERS (supports multiple HMs per round)
-create table public.round_interviewers (
-  id uuid default gen_random_uuid() primary key,
-  round_id uuid references public.process_rounds(id) on delete cascade,
-  hm_id uuid references public.profiles(id),
-  hm_name text not null,
-  confirmed boolean default false,
-  created_at timestamptz default now()
-);
+/* ── METRICS ── */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.mc{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;padding:15px 17px}
+.mc-lbl{font-size:12px;color:var(--txm);margin-bottom:4px}
+.mc-val{font-size:26px;font-weight:600;line-height:1}
+.mc-sub{font-size:11px;color:var(--txm);margin-top:4px}
 
--- 7. TEF RATINGS (one row per HM per round)
-create table public.tef_ratings (
-  id uuid default gen_random_uuid() primary key,
-  round_id uuid references public.process_rounds(id) on delete cascade,
-  hm_id uuid references public.profiles(id),
-  hm_name text,
-  c1 integer check (c1 between 1 and 5),   -- Passion and Motivation
-  c2 integer check (c2 between 1 and 5),   -- Commitment and Enthusiasm
-  c3 integer check (c3 between 1 and 5),   -- Growth and Continuous Improvement
-  c4 integer check (c4 between 1 and 5),   -- Adaptability and Resilience
-  c5 integer check (c5 between 1 and 5),   -- Collaboration and Communication
-  c6 integer check (c6 between 1 and 5),   -- Leadership and Accountability
-  c7 integer check (c7 between 1 and 5),   -- Empathy and Humility
-  c8 integer check (c8 between 1 and 5),   -- Strategic and Analytical Thinking
-  c9 integer check (c9 between 1 and 5),   -- Problem Solving and Conflict Management
-  c10 integer check (c10 between 1 and 5), -- Integrity and Risk-Taking
-  comments text,
-  hire_reason text,
-  no_hire_reason text,
-  submitted_at timestamptz default now()
-);
+/* ── FILTERS ── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px}
+.sec-title{font-size:14px;font-weight:600}
+.filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sw{position:relative}
+.sw i{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txm);pointer-events:none}
+.si{padding:6px 10px 6px 30px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--surf);font-size:13px;color:var(--tx);font-family:var(--font);width:200px;outline:none}
+.si:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fb{padding:5px 13px;border-radius:20px;border:1px solid var(--bdr);background:var(--surf);font-size:12px;cursor:pointer;color:var(--tx2);font-family:var(--font);font-weight:500;transition:all .12s}
+.fb:hover{color:var(--tx);border-color:var(--bdrs)}
+.fb.active{background:var(--acc);color:#fff;border-color:var(--acc)}
 
--- 8. TEF HR SECTION
-create table public.tef_hr (
-  id uuid default gen_random_uuid() primary key,
-  process_id uuid references public.processes(id) on delete cascade,
-  hr_id uuid references public.profiles(id),
-  strengths text,
-  weaknesses text,
-  overall_observation text,
-  reason_to_hire text,
-  designation text,
-  grade text,
-  reporting text,
-  department text,
-  location text,
-  recommendation boolean,
-  submitted_at timestamptz default now()
-);
+/* ── TABLE ── */
+.tw{background:var(--surf);border-radius:10px;border:1px solid var(--bdr);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{border-bottom:1px solid var(--bdr);background:var(--surf2)}
+thead th{padding:10px 15px;text-align:left;font-size:11px;font-weight:600;color:var(--txm);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
+tbody tr{border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--acc-bg)}
+td{padding:11px 15px;vertical-align:middle}
+.c-name{font-weight:500}
+.c-meta{font-size:11px;color:var(--txm);margin-top:2px}
+.r-dept{font-size:11px;color:var(--txm);margin-top:2px}
 
--- 9. TIMELINE EVENTS
-create table public.timeline_events (
-  id uuid default gen_random_uuid() primary key,
-  process_id uuid references public.processes(id) on delete cascade,
-  label text not null,
-  detail text,
-  conductor_name text,
-  updated_by uuid references public.profiles(id),
-  updated_by_name text,
-  state text default 'active' check (state in ('done','active','hold','pend')),
-  created_at timestamptz default now()
-);
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-active{background:var(--ok-bg);color:var(--ok-tx)}
+.b-hold{background:var(--warn-bg);color:var(--warn-tx)}
+.b-cancelled{background:var(--err-bg);color:var(--err-tx)}
+.b-scheduled{background:var(--acc-bg);color:var(--acc-tx)}
+.b-closed-ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.b-closed-err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.sp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
+.sd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.d-acc{background:var(--acc)}.d-ok{background:#16a34a}.d-hold{background:#d97706}.d-err{background:#dc2626}.d-pend{background:var(--bdrs)}
+.ta-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
+.ta-av{width:22px;height:22px;border-radius:50%;background:var(--pro-bg);color:var(--pro-tx);font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acts{display:flex;align-items:center;gap:4px}
+.ib{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--bdr);background:transparent;cursor:pointer;color:var(--txm);transition:all .12s;flex-shrink:0}
+.ib:hover{background:var(--bg);color:var(--tx);border-color:var(--bdrs)}
+.ib i{font-size:14px}
+.ib-acc{color:var(--acc-tx);border-color:var(--acc-tx)}
+.ib-acc:hover{background:var(--acc-bg)}
+.empty-c{text-align:center;padding:48px!important;color:var(--txm)}
+.empty-c i{font-size:28px;display:block;margin:0 auto 8px;opacity:.5}
 
--- 10. COMMENTS
-create table public.comments (
-  id uuid default gen_random_uuid() primary key,
-  process_id uuid references public.processes(id) on delete cascade,
-  by_id uuid references public.profiles(id),
-  by_name text,
-  text text not null,
-  created_at timestamptz default now()
-);
+/* ── LOADING STATE ── */
+.loading-row td{text-align:center;padding:40px!important;color:var(--txm)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
 
--- ================================================
--- ROW LEVEL SECURITY
--- ================================================
-alter table public.profiles enable row level security;
-alter table public.team_members enable row level security;
-alter table public.candidates enable row level security;
-alter table public.processes enable row level security;
-alter table public.process_rounds enable row level security;
-alter table public.round_interviewers enable row level security;
-alter table public.tef_ratings enable row level security;
-alter table public.tef_hr enable row level security;
-alter table public.timeline_events enable row level security;
-alter table public.comments enable row level security;
+/* ── DETAIL PANEL ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none}
+.ov.open{display:block}
+.dp{position:fixed;top:0;right:0;width:500px;height:100vh;background:var(--surf);border-left:1px solid var(--bdr);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease}
+.dp.open{transform:translateX(0)}
+.dp-hd{padding:16px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;gap:12px}
+.dp-name{font-size:15px;font-weight:600}
+.dp-meta{font-size:12px;color:var(--txm);margin-top:3px}
+.dp-body{padding:20px;flex:1;overflow-y:auto}
+.dp-acts{padding:14px 20px;border-top:1px solid var(--bdr);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.ds{margin-bottom:22px}
+.ds-title{font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--bdr)}
+.ir{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;font-size:13px;gap:12px}
+.il{color:var(--txm);flex-shrink:0}
+.iv{font-weight:500;text-align:right}
 
--- Read: all authenticated users
-create policy "read all" on public.profiles        for select using (auth.role() = 'authenticated');
-create policy "read all" on public.team_members    for select using (auth.role() = 'authenticated');
-create policy "read all" on public.candidates      for select using (auth.role() = 'authenticated');
-create policy "read all" on public.processes       for select using (auth.role() = 'authenticated');
-create policy "read all" on public.process_rounds  for select using (auth.role() = 'authenticated');
-create policy "read all" on public.round_interviewers for select using (auth.role() = 'authenticated');
-create policy "read all" on public.tef_ratings     for select using (auth.role() = 'authenticated');
-create policy "read all" on public.tef_hr          for select using (auth.role() = 'authenticated');
-create policy "read all" on public.timeline_events for select using (auth.role() = 'authenticated');
-create policy "read all" on public.comments        for select using (auth.role() = 'authenticated');
+/* ── TIMELINE ── */
+.tl{display:flex;flex-direction:column}
+.tli{display:flex;gap:12px;padding:10px 0;position:relative}
+.tli:not(:last-child)::after{content:'';position:absolute;left:11px;top:34px;bottom:-10px;width:1px;background:var(--bdr)}
+.tl-ic{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px}
+.ic-done{background:var(--ok-bg);color:var(--ok-tx)}.ic-active{background:var(--acc-bg);color:var(--acc-tx)}.ic-pend{background:var(--bg);color:var(--txm);border:1px solid var(--bdr)}.ic-hold{background:var(--warn-bg);color:var(--warn-tx)}
+.tl-s{font-size:13px;font-weight:500}
+.tl-d{font-size:12px;color:var(--tx2);margin-top:2px}
+.tl-owner{font-size:11px;color:var(--txm);margin-top:3px;display:flex;align-items:center;gap:4px}
+.tl-owner i{font-size:12px}
+.tl-dt{font-size:11px;color:var(--txm);margin-top:2px}
 
--- Write: all authenticated (role enforcement done in app layer)
-create policy "write" on public.candidates         for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.processes          for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.process_rounds     for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.round_interviewers for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.tef_ratings        for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.tef_hr             for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.timeline_events    for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.comments           for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "write" on public.team_members       for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+/* ── COMMENTS ── */
+.cmt{background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
+.cmt-meta{font-size:11px;color:var(--txm);margin-bottom:4px}
+.cmt-text{font-size:13px}
 
--- Profiles: own row only for write
-create policy "own profile read"   on public.profiles for select using (auth.uid() = id);
-create policy "own profile insert" on public.profiles for insert with check (auth.uid() = id);
-create policy "own profile update" on public.profiles for update using (auth.uid() = id);
+/* ── SALARY TOGGLE ── */
+.tg-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:10px;gap:12px}
+.tg{position:relative;width:38px;height:21px;cursor:pointer;flex-shrink:0}
+.tg input{opacity:0;width:0;height:0;position:absolute}
+.tg-sl{position:absolute;inset:0;border-radius:21px;background:var(--bdrs);transition:.2s}
+.tg input:checked+.tg-sl{background:var(--acc)}
+.tg-sl::before{content:'';position:absolute;width:15px;height:15px;left:3px;bottom:3px;border-radius:50%;background:#fff;transition:.2s}
+.tg input:checked+.tg-sl::before{transform:translateX(17px)}
+.sal-hide{filter:blur(5px);user-select:none;pointer-events:none}
+.sal-locked{font-size:11px;color:var(--txm);text-align:center;padding:6px;background:var(--surf2);border-radius:var(--r);margin-top:4px}
 
--- ================================================
--- AUTO-TIMESTAMP TRIGGER
--- ================================================
-create or replace function update_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
+/* ── FORMS ── */
+.fi{padding:8px 11px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--bg);font-size:13px;color:var(--tx);font-family:var(--font);width:100%;outline:none}
+.fi:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+textarea.fi{min-height:76px;resize:vertical;line-height:1.5}
+select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b9b90' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 
-create trigger processes_updated_at
-  before update on public.processes
-  for each row execute function update_updated_at();
+/* ── MODALS ── */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.mo.open{display:flex}
+.modal{background:var(--surf);border-radius:12px;border:1px solid var(--bdr);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-sm{max-width:420px}
+.mhd{padding:16px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surf);z-index:1}
+.m-title{font-size:15px;font-weight:600}
+.mbody{padding:22px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fgroup{display:flex;flex-direction:column;gap:5px}
+.flbl{font-size:12px;font-weight:500;color:var(--tx2)}
+.fdiv{grid-column:1/-1;font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;padding:6px 0 4px;border-bottom:1px solid var(--bdr);margin-top:6px}
+.mft{padding:14px 22px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surf)}
 
--- ================================================
--- DONE
--- ================================================
+/* ── STATUS MODAL ── */
+.stage-opts{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;margin-bottom:14px;padding:2px}
+.stage-opt{padding:9px 12px;border-radius:var(--r);border:1px solid var(--bdr);cursor:pointer;font-size:13px;transition:all .12s}
+.stage-opt:hover{border-color:var(--acc);background:var(--acc-bg)}
+.stage-opt.sel{border-color:var(--acc);background:var(--acc-bg);font-weight:500}
+
+/* ── TEAM PAGE ── */
+.team-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:4px}
+.team-card{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;overflow:hidden}
+.team-card-hd{padding:14px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.team-card-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+.team-list{padding:8px 0;min-height:60px}
+.team-member{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--bdr);transition:background .1s}
+.team-member:last-child{border-bottom:none}
+.team-member:hover{background:var(--bg)}
+.tm-info{display:flex;align-items:center;gap:10px}
+.tm-av{width:32px;height:32px;border-radius:50%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tm-av-ta{background:var(--pro-bg);color:var(--pro-tx)}
+.tm-av-hm{background:var(--ok-bg);color:var(--ok-tx)}
+.tm-name{font-size:13px;font-weight:500}
+.tm-email{font-size:11px;color:var(--txm);margin-top:1px}
+.empty-team{padding:24px 16px;text-align:center;color:var(--txm);font-size:13px}
+.add-member-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--bdr);background:var(--surf2)}
+.perm-box{background:var(--warn-bg);border:1px solid #fde68a;border-radius:var(--r);padding:11px 13px;font-size:12px;color:var(--warn-tx);display:flex;align-items:flex-start;gap:7px;margin-bottom:16px}
+.perm-box i{font-size:15px;flex-shrink:0;margin-top:1px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transition:transform .22s ease;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bdrs);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon"><i class="ti ti-users"></i></div>
+      <div>
+        <div class="login-title">Talent Nexus</div>
+        <div class="login-sub">ESDS Talent Acquisition Portal</div>
+      </div>
+    </div>
+    <div id="loginErr" class="login-err"></div>
+    <div class="login-field">
+      <label class="login-lbl">Email address</label>
+      <input class="login-input" id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label class="login-lbl">Password</label>
+      <input class="login-input" id="loginPwd" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign in</button>
+    <div class="login-footer">Talent Nexus · ESDS · Powered by Supabase</div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div class="app" id="appShell">
+  <!-- Developer bar (only visible for developer role) -->
+  <div style="display:flex;flex-direction:column;width:215px;min-width:215px">
+    <aside class="sb" style="flex:1">
+      <div class="sb-logo">
+        <div class="sb-mark">
+          <div class="sb-icon"><i class="ti ti-users"></i></div>
+          <span class="sb-title">Talent Nexus</span>
+        </div>
+        <div class="sb-sub">Talent Acquisition Portal</div>
+      </div>
+      <nav class="nav">
+        <div class="nav-sec">Main</div>
+        <div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+        <div class="nav-item" onclick="showPage('dashboard',this)"><i class="ti ti-users"></i> All processes</div>
+        <div class="nav-item" onclick="showPage('dashboard',this)"><i class="ti ti-calendar"></i> Scheduled</div>
+        <div class="nav-sec">Manage</div>
+        <div class="nav-item" id="nav-team" onclick="showPage('team',this)"><i class="ti ti-id-badge"></i> Team</div>
+        <div class="nav-item"><i class="ti ti-chart-bar"></i> Reports</div>
+        <div class="nav-item"><i class="ti ti-settings"></i> Settings</div>
+      </nav>
+      <div class="sb-user">
+        <div class="u-chip" onclick="doLogout()">
+          <div class="av" id="sbAv">--</div>
+          <div>
+            <div class="u-name" id="sbName">Loading…</div>
+            <div class="u-role" id="sbRole"></div>
+          </div>
+          <i class="ti ti-logout" style="font-size:15px;color:var(--txm);margin-left:auto" title="Sign out"></i>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="main">
+    <!-- Developer toggle bar -->
+    <div class="dev-bar" id="devBar">
+      <div class="dev-bar-label"><i class="ti ti-code"></i> Developer mode — viewing as:</div>
+      <div class="dev-roles">
+        <button class="dev-role-btn active" id="dev-btn-admin" onclick="devSwitch('admin',this)">Admin</button>
+        <button class="dev-role-btn" id="dev-btn-ta" onclick="devSwitch('ta',this)">TA</button>
+        <button class="dev-role-btn" id="dev-btn-hm" onclick="devSwitch('hm',this)">HM</button>
+      </div>
+    </div>
+
+    <div class="topbar">
+      <div>
+        <div class="pg-title" id="pgTitle">Recruitment dashboard</div>
+        <div class="pg-sub" id="pgSub">All active hiring processes — ESDS Chennai</div>
+      </div>
+      <div class="tb-right">
+        <button class="btn btn-p" id="newBtn" onclick="openMo('moNew')" style="display:none"><i class="ti ti-plus"></i> New process</button>
+      </div>
+    </div>
+
+    <!-- Dashboard page -->
+    <div class="page active" id="page-dashboard">
+      <div class="content">
+        <div class="metrics">
+          <div class="mc"><div class="mc-lbl">Active processes</div><div class="mc-val" id="m1">—</div><div class="mc-sub">Across all TAs</div></div>
+          <div class="mc"><div class="mc-lbl">Interviews this week</div><div class="mc-val" id="m2">—</div><div class="mc-sub">L1 &amp; L2 combined</div></div>
+          <div class="mc"><div class="mc-lbl">On hold</div><div class="mc-val" id="m3">—</div><div class="mc-sub">Pending reschedule</div></div>
+          <div class="mc"><div class="mc-lbl">Avg. days in pipeline</div><div class="mc-val" id="m4">—</div><div class="mc-sub">Active processes only</div></div>
+        </div>
+        <div class="sec-hd">
+          <div class="sec-title">Candidate pipeline</div>
+          <div class="filters">
+            <div class="sw"><i class="ti ti-search"></i><input class="si" id="srch" placeholder="Search candidate, role…" oninput="renderTable()"></div>
+            <button class="fb active" onclick="setFilter(this,'all')">All</button>
+            <button class="fb" onclick="setFilter(this,'active')">Active</button>
+            <button class="fb" onclick="setFilter(this,'hold')">On hold</button>
+            <button class="fb" onclick="setFilter(this,'scheduled')">Scheduled</button>
+            <button class="fb" onclick="setFilter(this,'closed')">Closed</button>
+          </div>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Candidate</th><th>Role</th><th>Current stage</th><th>Status</th><th>TA owner</th><th>HM (current)</th><th>Days</th><th></th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team page -->
+    <div class="page" id="page-team">
+      <div class="content">
+        <div class="sec-hd" style="margin-bottom:16px">
+          <div>
+            <div class="sec-title">Team management</div>
+            <div style="font-size:12px;color:var(--txm);margin-top:2px">Manage TA members and Hiring Managers</div>
+          </div>
+        </div>
+        <div id="teamPermBox" style="display:none;margin-bottom:16px">
+          <div class="perm-box"><i class="ti ti-info-circle"></i><span>As a <strong>TA</strong>, you can add or remove Hiring Managers only.</span></div>
+        </div>
+        <div class="team-cols">
+          <div class="team-card" id="ta-card">
+            <div class="team-card-hd">
+              <div class="team-card-title"><i class="ti ti-user-check" style="color:var(--pro-tx)"></i> Talent Acquisition (TA)</div>
+              <span style="font-size:12px;color:var(--txm)" id="ta-count">0 members</span>
+            </div>
+            <div class="team-list" id="ta-list"></div>
+            <div class="add-member-row" id="ta-add-row" style="display:none">
+              <input class="fi" id="ta-name-in" placeholder="Full name" style="flex:1">
+              <input class="fi" id="ta-email-in" placeholder="Email (optional)" style="flex:1.5">
+              <button class="btn btn-p btn-sm" onclick="addMember('TA')"><i class="ti ti-plus"></i> Add</button>
+            </div>
+          </div>
+          <div class="team-card" id="hm-card">
+            <div class="team-card-hd">
+              <div class="team-card-title"><i class="ti ti-briefcase" style="color:var(--ok-tx)"></i> Hiring Managers (HM)</div>
+              <span style="font-size:12px;color:var(--txm)" id="hm-count">0 members</span>
+            </div>
+            <div class="team-list" id="hm-list"></div>
+            <div class="add-member-row" id="hm-add-row" style="display:none">
+              <input class="fi" id="hm-name-in" placeholder="Full name" style="flex:1">
+              <input class="fi" id="hm-email-in" placeholder="Email (optional)" style="flex:1.5">
+              <button class="btn btn-p btn-sm" onclick="addMember('HM')"><i class="ti ti-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL PANEL ── -->
+<div class="ov" id="dpOv" onclick="closeDP()"></div>
+<div class="dp" id="dp">
+  <div class="dp-hd">
+    <div style="min-width:0"><div class="dp-name" id="dpName"></div><div class="dp-meta" id="dpMeta"></div></div>
+    <button class="ib" onclick="closeDP()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="dp-body" id="dpBody"></div>
+  <div class="dp-acts" id="dpActs"></div>
+</div>
+
+<!-- ── NEW PROCESS MODAL ── -->
+<div class="mo" id="moNew" onclick="if(event.target===this)closeMo('moNew')">
+  <div class="modal">
+    <div class="mhd"><div class="m-title">Start new recruitment process</div><button class="ib" onclick="closeMo('moNew')"><i class="ti ti-x"></i></button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fdiv">Job details</div>
+        <div class="fgroup"><label class="flbl">Job title / role *</label><input class="fi" id="f-role" placeholder="e.g. Senior DevOps Engineer"></div>
+        <div class="fgroup"><label class="flbl">Department</label><input class="fi" id="f-dept" placeholder="e.g. Infrastructure"></div>
+        <div class="fgroup"><label class="flbl">Employment type</label><select class="fi" id="f-etype"><option>Full time</option><option>Contract</option><option>Internship</option></select></div>
+        <div class="fgroup"><label class="flbl">Job location</label><input class="fi" id="f-jloc" placeholder="e.g. Chennai"></div>
+        <div class="fgroup"><label class="flbl">Interview rounds</label><select class="fi" id="f-rounds"><option value="2">2 rounds (L1 Tech + HR)</option><option value="3">3 rounds (L1+L2 Tech + HR)</option><option value="4">4 rounds (L1+L2+L3 + HR)</option></select></div>
+        <div class="fgroup"><label class="flbl">Assigned TA *</label><select class="fi" id="f-ta"></select></div>
+        <div class="fdiv">Candidate details</div>
+        <div class="fgroup"><label class="flbl">Full name *</label><input class="fi" id="f-cname" placeholder="Candidate full name"></div>
+        <div class="fgroup"><label class="flbl">Personal email</label><input class="fi" id="f-email" type="email"></div>
+        <div class="fgroup"><label class="flbl">Phone</label><input class="fi" id="f-phone" placeholder="+91 XXXXX XXXXX"></div>
+        <div class="fgroup"><label class="flbl">Current organization</label><input class="fi" id="f-org"></div>
+        <div class="fgroup"><label class="flbl">Current designation</label><input class="fi" id="f-desig"></div>
+        <div class="fgroup"><label class="flbl">Total experience (yrs)</label><input class="fi" id="f-exp" type="number" min="0" step="0.5"></div>
+        <div class="fgroup"><label class="flbl">Relevant experience (yrs)</label><input class="fi" id="f-rexp" type="number" min="0" step="0.5"></div>
+        <div class="fgroup"><label class="flbl">Highest qualification</label><input class="fi" id="f-edu"></div>
+        <div class="fgroup">
+          <label class="flbl">Notice period</label>
+          <input class="fi" id="f-np" placeholder="e.g. 30 days, Immediate">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--tx2);cursor:pointer"><input type="checkbox" id="f-np-neg" style="width:14px;height:14px"> Negotiable</label>
+        </div>
+        <div class="fgroup"><label class="flbl">Current location</label><input class="fi" id="f-cloc"></div>
+        <div class="fgroup"><label class="flbl">Preferred location</label><input class="fi" id="f-ploc"></div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Current CTC (LPA)</label>
+          <input class="fi" id="f-curctc" type="number" min="0" step="0.1" style="margin-bottom:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer"><input type="checkbox" id="f-ctc-split" onchange="toggleCTCSplit('f')" style="width:14px;height:14px"> Show Fixed / Variable split</label>
+          <div id="f-ctc-split-fields" style="display:none;gap:8px;grid-template-columns:1fr 1fr;margin-top:8px">
+            <div class="fgroup"><label class="flbl">Fixed (LPA)</label><input class="fi" id="f-ctc-fixed" type="number" min="0" step="0.1"></div>
+            <div class="fgroup"><label class="flbl">Variable (LPA)</label><input class="fi" id="f-ctc-var" type="number" min="0" step="0.1"></div>
+          </div>
+        </div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Expected CTC (LPA)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Min</label><input class="fi" id="f-expmin" type="number" min="0" step="0.5"></div>
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Max</label><input class="fi" id="f-expmax" type="number" min="0" step="0.5"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer"><input type="checkbox" id="f-expctc-neg" style="width:14px;height:14px"> Negotiable</label>
+        </div>
+        <div class="fgroup"><label class="flbl">WFO confirmation</label><select class="fi" id="f-wfo"><option>Yes</option><option>No</option></select></div>
+        <div class="fgroup"><label class="flbl">Rotational shifts ok</label><select class="fi" id="f-shift"><option>Yes</option><option>No</option></select></div>
+        <div class="fgroup"><label class="flbl">Source portal</label><select class="fi" id="f-src"><option>Naukri</option><option>LinkedIn</option><option>Indeed</option><option>Referral</option><option>Other</option></select></div>
+        <div class="fgroup"><label class="flbl">Preferred interview slots</label><input class="fi" id="f-slots" placeholder="e.g. Weekdays 10am–12pm"></div>
+      </div>
+    </div>
+    <div class="mft"><button class="btn" onclick="closeMo('moNew')">Cancel</button><button class="btn btn-p" onclick="submitNew()"><i class="ti ti-check"></i> Create process</button></div>
+  </div>
+</div>
+
+<!-- ── EDIT MODAL ── -->
+<div class="mo" id="moEdit" onclick="if(event.target===this)closeMo('moEdit')">
+  <div class="modal">
+    <div class="mhd"><div class="m-title">Edit process details</div><button class="ib" onclick="closeMo('moEdit')"><i class="ti ti-x"></i></button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fdiv">Job details</div>
+        <div class="fgroup"><label class="flbl">Job title / role</label><input class="fi" id="e-role"></div>
+        <div class="fgroup"><label class="flbl">Department</label><input class="fi" id="e-dept"></div>
+        <div class="fgroup"><label class="flbl">Interview rounds</label><select class="fi" id="e-rounds"><option value="2">2 rounds</option><option value="3">3 rounds</option><option value="4">4 rounds</option></select></div>
+        <div class="fgroup"><label class="flbl">Assigned TA</label><select class="fi" id="e-ta"></select></div>
+        <div class="fgroup"><label class="flbl">HM (current round)</label><select class="fi" id="e-hm"></select></div>
+        <div class="fdiv">Candidate details</div>
+        <div class="fgroup"><label class="flbl">Full name</label><input class="fi" id="e-cname"></div>
+        <div class="fgroup"><label class="flbl">Email</label><input class="fi" id="e-email"></div>
+        <div class="fgroup"><label class="flbl">Phone</label><input class="fi" id="e-phone"></div>
+        <div class="fgroup"><label class="flbl">Organization</label><input class="fi" id="e-org"></div>
+        <div class="fgroup"><label class="flbl">Designation</label><input class="fi" id="e-desig"></div>
+        <div class="fgroup"><label class="flbl">Total exp (yrs)</label><input class="fi" id="e-exp" type="number"></div>
+        <div class="fgroup"><label class="flbl">Relevant exp (yrs)</label><input class="fi" id="e-rexp" type="number"></div>
+        <div class="fgroup">
+          <label class="flbl">Notice period</label>
+          <input class="fi" id="e-np">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--tx2);cursor:pointer"><input type="checkbox" id="e-np-neg" style="width:14px;height:14px"> Negotiable</label>
+        </div>
+        <div class="fgroup"><label class="flbl">Current CTC (LPA)</label><input class="fi" id="e-curctc" type="number" step="0.1"></div>
+        <div class="fgroup" style="grid-column:1/-1">
+          <label class="flbl">Expected CTC (LPA)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Min</label><input class="fi" id="e-expmin" type="number" step="0.5"></div>
+            <div class="fgroup"><label class="flbl" style="font-weight:400">Max</label><input class="fi" id="e-expmax" type="number" step="0.5"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer"><input type="checkbox" id="e-expctc-neg" style="width:14px;height:14px"> Negotiable</label>
+        </div>
+      </div>
+    </div>
+    <div class="mft"><button class="btn" onclick="closeMo('moEdit')">Cancel</button><button class="btn btn-p" onclick="saveEdit()"><i class="ti ti-device-floppy"></i> Save changes</button></div>
+  </div>
+</div>
+
+<!-- ── STATUS MODAL ── -->
+<div class="mo" id="moStatus" onclick="if(event.target===this)closeMo('moStatus')">
+  <div class="modal modal-sm">
+    <div class="mhd"><div class="m-title">Update process status</div><button class="ib" onclick="closeMo('moStatus')"><i class="ti ti-x"></i></button></div>
+    <div class="mbody">
+      <p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Updating: <strong id="st-cname"></strong></p>
+      <div class="fgroup" style="margin-bottom:14px">
+        <label class="flbl" style="margin-bottom:6px">1. Select current stage</label>
+        <div class="stage-opts" id="stageOpts"></div>
+      </div>
+      <div id="auto-status-preview" style="display:none;margin-bottom:14px;padding:10px 13px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--surf2)">
+        <div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Status will be automatically set to</div>
+        <div id="auto-status-val" style="font-size:13px;font-weight:600"></div>
+        <div id="auto-status-reason" style="font-size:11px;color:var(--txm);margin-top:2px"></div>
+      </div>
+      <div class="fgroup" style="margin-bottom:14px">
+        <label class="flbl" style="margin-bottom:8px">2. Who conducted this step</label>
+        <select class="fi" id="st-conductor"></select>
+      </div>
+      <div class="fgroup">
+        <label class="flbl">3. Comment / reason <span id="cmt-req" style="color:var(--err-tx)"></span></label>
+        <textarea class="fi" id="st-comment" style="margin-top:5px" placeholder="Add details about this update…"></textarea>
+      </div>
+    </div>
+    <div class="mft"><button class="btn" onclick="closeMo('moStatus')">Cancel</button><button class="btn btn-p" onclick="saveStatus()"><i class="ti ti-device-floppy"></i> Save update</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE INIT ──
+const SUPA_URL  = 'https://txzrqrbixxrkaxdrsdnm.supabase.co';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4enJxcmJpeHhya2F4ZHJzZG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3OTc1MDUsImV4cCI6MjA5ODM3MzUwNX0.tUzBPvNnfXub234LYyTN5jvhcKB5PP6WQ8ogghCEw3c';
+const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+
+// ── PERMISSION MATRIX ──
+const PERMS = {
+  admin:     { create:true,  edit:true,  status:true,  salary:true,  comment:true, manageTA:true,  manageHM:true  },
+  ta:        { create:true,  edit:true,  status:true,  salary:true,  comment:true, manageTA:false, manageHM:true  },
+  hm:        { create:false, edit:false, status:false, salary:false, comment:true, manageTA:false, manageHM:false },
+  developer: { create:true,  edit:true,  status:true,  salary:true,  comment:true, manageTA:true,  manageHM:true  }
+};
+
+const STAGES = [
+  'Screening call completed','Profile shared with HM','HM review — shortlisting',
+  'Profile rejected by HM','Scheduling in progress',
+  'L1 scheduled','L1 completed — Selected','L1 completed — Rejected','No show — L1',
+  'L2 scheduled','L2 completed — Selected','L2 completed — Rejected','No show — L2',
+  'L3 scheduled','L3 completed — Selected','L3 completed — Rejected','No show — L3',
+  'HR round scheduled','HR round completed — Selected','HR round completed — Rejected',
+  'Drop off','Process closed'
+];
+
+// ── STATE ──
+let currentUser   = null;   // Supabase auth user
+let currentProfile= null;   // profiles row
+let activeRole    = null;   // effective role (may differ for developer)
+let processes     = [];
+let teamMembers   = { TA:[], HM:[] };
+let filter        = 'all';
+let editId        = null;
+let statusId      = null;
+let selStageVal   = null;
+let pendingSalId  = null;
+let pendingSalVal = null;
+
+// ── HELPERS ──
+function initials(n){ return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function today(){ return new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function perm(){ return PERMS[activeRole] || PERMS.hm; }
+
+function badge(s){
+  const m={scheduled:'b-scheduled',active:'b-active',hold:'b-hold',cancelled:'b-cancelled','closed-selected':'b-closed-ok','closed-rejected':'b-closed-err'};
+  const l={scheduled:'Scheduled',active:'Active',hold:'On hold',cancelled:'Cancelled','closed-selected':'Closed — Selected','closed-rejected':'Closed — Rejected'};
+  return `<span class="badge ${m[s]||'b-active'}">${l[s]||s}</span>`;
+}
+function dotCls(stage,status){
+  if(status==='hold') return 'd-hold';
+  if(status==='cancelled'||status==='closed-rejected') return 'd-err';
+  if(status==='closed-selected') return 'd-ok';
+  if((stage||'').toLowerCase().includes('scheduled')) return 'd-acc';
+  if((stage||'').toLowerCase().includes('completed')||stage==='Process closed') return 'd-ok';
+  return 'd-acc';
+}
+function icClass(s){ return {done:'ic-done',active:'ic-active',hold:'ic-hold',pend:'ic-pend'}[s]||'ic-pend'; }
+function icIcon(s){ return {done:'check',active:'loader-2',hold:'pause',pend:'circle'}[s]||'circle'; }
+
+function stageToStatus(stage){
+  const s=stage||'';
+  if(s.toLowerCase().includes('scheduled'))  return {status:'scheduled',label:'Scheduled 📅',reason:'An interview has been set'};
+  if(s==='On hold')                          return {status:'hold',label:'On hold ⏸️',reason:'Process paused — comment required'};
+  if(s.includes('Rejected')||s.includes('rejected')) return {status:'closed-rejected',label:'Closed — Rejected ❌',reason:'Candidate did not progress'};
+  if(s==='HR round completed — Selected'||s==='Process closed') return {status:'closed-selected',label:'Closed — Selected ✅',reason:'Process complete'};
+  if(s==='Drop off'||s.includes('No show')) return {status:'cancelled',label:'Cancelled 🚫',reason:'Candidate unavailable'};
+  if(s.includes('Selected'))                return {status:'active',label:'Active 🟢',reason:'Moving to next round'};
+  return {status:'active',label:'Active 🟢',reason:'Process in progress'};
+}
+
+function toggleCTCSplit(pfx){
+  const chk=document.getElementById(pfx+'-ctc-split');
+  const flds=document.getElementById(pfx+'-ctc-split-fields');
+  if(flds) flds.style.display=chk&&chk.checked?'grid':'none';
+}
+
+// ── AUTH ──
+async function doLogin(){
+  const email=(document.getElementById('loginEmail').value||'').trim();
+  const pwd=(document.getElementById('loginPwd').value||'').trim();
+  if(!email||!pwd){ showLoginErr('Please enter your email and password'); return; }
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='Signing in…';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pwd});
+  if(error){ showLoginErr(error.message); btn.disabled=false; btn.textContent='Sign in'; return; }
+  await initApp(data.user);
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPwd').value='';
+  document.getElementById('loginBtn').disabled=false;
+  document.getElementById('loginBtn').textContent='Sign in';
+  processes=[]; teamMembers={TA:[],HM:[]};
+}
+
+function showLoginErr(msg){
+  const el=document.getElementById('loginErr');
+  el.textContent=msg; el.style.display='block';
+}
+
+async function initApp(user){
+  currentUser=user;
+  // Load profile
+  const {data:prof}=await sb.from('profiles').select('*').eq('id',user.id).single();
+  if(!prof){
+    // Auto-create profile if missing (first login)
+    const role = getUserRole(user.id);
+    const name = getUserName(user.id);
+    await sb.from('profiles').insert({id:user.id,full_name:name,email:user.email,role});
+    currentProfile={id:user.id,full_name:name,email:user.email,role};
+  } else {
+    currentProfile=prof;
+  }
+  activeRole=currentProfile.role;
+  // Show app
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='flex';
+  // Developer bar
+  if(currentProfile.role==='developer'){
+    document.getElementById('devBar').style.display='flex';
+    activeRole='admin'; // default dev view
+    document.getElementById('dev-btn-admin').classList.add('active');
+  }
+  updateSidebar();
+  await loadTeam();
+  await loadProcesses();
+  applyPermissions();
+}
+
+// Map known user IDs to roles/names (fallback for first login)
+function getUserRole(uid){
+  const map={
+    '397d3078-6652-44b0-a895-2d29778bbd7e':'developer',
+    '5c5fa079-b3c7-4b8d-b545-387fbff464ab':'ta',
+    '8987b8c9-84eb-47f9-b957-206025732ad1':'hm'
+  };
+  return map[uid]||'hm';
+}
+function getUserName(uid){
+  const map={
+    '397d3078-6652-44b0-a895-2d29778bbd7e':'Prem Dakshin',
+    '5c5fa079-b3c7-4b8d-b545-387fbff464ab':'Manikandan',
+    '8987b8c9-84eb-47f9-b957-206025732ad1':'Vijay Basker'
+  };
+  return map[uid]||'User';
+}
+
+function updateSidebar(){
+  const name=currentProfile.full_name||'User';
+  const roleLabel={admin:'Admin',ta:'TA',hm:'Hiring Manager',developer:'Developer'}[activeRole]||activeRole;
+  document.getElementById('sbAv').textContent=initials(name);
+  document.getElementById('sbName').textContent=name;
+  document.getElementById('sbRole').textContent=roleLabel+(currentProfile.role==='developer'&&activeRole!=='developer'?' (demo)':'');
+}
+
+// ── DEVELOPER ROLE SWITCH ──
+function devSwitch(r,btn){
+  activeRole=r;
+  document.querySelectorAll('.dev-role-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateSidebar();
+  applyPermissions();
+  renderTable();
+  toast('Developer view: '+r.toUpperCase());
+}
+
+function applyPermissions(){
+  const p=perm();
+  document.getElementById('newBtn').style.display=p.create?'inline-flex':'none';
+}
+
+// ── DATA LOADING ──
+async function loadProcesses(){
+  document.getElementById('tbody').innerHTML=`<tr class="loading-row"><td colspan="8"><div class="spinner"></div><br>Loading processes…</td></tr>`;
+  const {data,error}=await sb.from('processes').select(`
+    *,
+    candidates(*),
+    timeline_events(*)
+  `).order('created_at',{ascending:false});
+  if(error){ toast('Error loading data: '+error.message); return; }
+  processes=data||[];
+  updateMetrics();
+  renderTable();
+}
+
+async function loadTeam(){
+  const {data}=await sb.from('team_members').select('*').order('created_at');
+  if(data){
+    teamMembers.TA=data.filter(m=>m.type==='TA');
+    teamMembers.HM=data.filter(m=>m.type==='HM');
+  }
+}
+
+// ── METRICS ──
+function updateMetrics(){
+  const act=processes.filter(p=>p.status==='active'||p.status==='scheduled');
+  document.getElementById('m1').textContent=act.length;
+  document.getElementById('m2').textContent=processes.filter(p=>p.status==='scheduled').length;
+  document.getElementById('m3').textContent=processes.filter(p=>p.status==='hold').length;
+  const avg=act.length?Math.round(act.reduce((s,p)=>s+(p.days||0),0)/act.length):0;
+  document.getElementById('m4').textContent=avg+'d';
+}
+
+// ── TABLE ──
+function renderTable(){
+  const p=perm();
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const rows=processes.filter(proc=>{
+    const c=proc.candidates||{};
+    if(filter==='active'    &&proc.status!=='active')    return false;
+    if(filter==='hold'      &&proc.status!=='hold')      return false;
+    if(filter==='scheduled' &&proc.status!=='scheduled') return false;
+    if(filter==='closed'    &&proc.status!=='cancelled'&&proc.status!=='closed-selected'&&proc.status!=='closed-rejected') return false;
+    if(q&&!(c.name||'').toLowerCase().includes(q)&&!(proc.role||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const tb=document.getElementById('tbody');
+  if(!rows.length){
+    tb.innerHTML='<tr><td colspan="8" class="empty-c"><i class="ti ti-inbox"></i>No processes match this filter</td></tr>';
+    return;
+  }
+  tb.innerHTML=rows.map(proc=>{
+    const c=proc.candidates||{};
+    const taName=teamMembers.TA.find(m=>m.id===proc.assigned_ta)?.full_name||'—';
+    const hmName=proc.current_hm_name||'Pending';
+    return `<tr onclick="openDP('${proc.id}')">
+      <td><div class="c-name">${c.name||'—'}</div><div class="c-meta">${c.org||'—'} · ${c.exp||0}y / ${c.rexp||0}y rel</div></td>
+      <td><div>${proc.role}</div><div class="r-dept">${proc.dept||'—'}</div></td>
+      <td><span class="sp"><span class="sd ${dotCls(proc.stage,proc.status)}"></span>${proc.stage}</span></td>
+      <td>${badge(proc.status)}</td>
+      <td><div class="ta-chip"><div class="ta-av">${initials(taName)}</div>${taName}</div></td>
+      <td style="font-size:13px;color:var(--tx2)">${hmName}</td>
+      <td style="font-size:13px;color:var(--tx2);text-align:center">${proc.days||0}d</td>
+      <td><div class="acts" onclick="event.stopPropagation()">
+        <button class="ib" onclick="openDP('${proc.id}')"><i class="ti ti-eye"></i></button>
+        ${p.edit?`<button class="ib" onclick="openEdit('${proc.id}')"><i class="ti ti-edit"></i></button>`:''}
+        ${p.status?`<button class="ib ib-acc" onclick="openStatus('${proc.id}')"><i class="ti ti-arrows-exchange"></i></button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DETAIL PANEL ──
+async function openDP(id){
+  const proc=processes.find(p=>p.id===id); if(!proc) return;
+  const c=proc.candidates||{};
+  const p=perm();
+  const showSal=(activeRole==='admin'||activeRole==='developer'||activeRole==='ta')?true:proc.sal_visible;
+
+  // Load comments fresh
+  const {data:cmts}=await sb.from('comments').select('*').eq('process_id',id).order('created_at');
+  const {data:tl}=await sb.from('timeline_events').select('*').eq('process_id',id).order('created_at');
+
+  document.getElementById('dpName').textContent=c.name||'—';
+  document.getElementById('dpMeta').textContent=(proc.role||'')+(proc.dept?' · '+proc.dept:'');
+
+  // Salary toggle
+  let salBlock='';
+  if(activeRole==='admin'||activeRole==='developer'||activeRole==='ta'){
+    salBlock=`<div class="tg-row">
+      <div>
+        <div style="font-size:12px;font-weight:500">Show salary to hiring manager</div>
+        <div style="font-size:11px;color:var(--txm);margin-top:2px" id="sal-lbl">${proc.sal_visible?'✓ Currently visible to HM':'✗ Currently hidden from HM'}</div>
+      </div>
+      <label class="tg"><input type="checkbox" id="sal-chk" ${proc.sal_visible?'checked':''} onchange="pendingSal('${id}',this.checked)"><span class="tg-sl"></span></label>
+    </div>
+    <div id="sal-save" style="display:none;margin-bottom:8px">
+      <button class="btn btn-p btn-sm" onclick="saveSal('${id}')"><i class="ti ti-device-floppy"></i> Save salary visibility</button>
+    </div>`;
+  } else if(!proc.sal_visible){
+    salBlock=`<div class="sal-locked"><i class="ti ti-eye-off" style="margin-right:4px"></i>Salary hidden — contact your TA to reveal</div>`;
+  }
+
+  // Format CTC
+  const ctcStr=c.curctc?(c.curctc+' LPA'+(c.ctc_fixed?' (Fixed: '+c.ctc_fixed+' + Variable: '+(c.ctc_variable||0)+')'  :'')):' —';
+  const expCtcStr=(c.expctc_min&&c.expctc_max)?(c.expctc_min+'–'+c.expctc_max+' LPA'+(c.expctc_neg?' (Negotiable)':'')):'—';
+
+  const cmtsHtml=(cmts||[]).length
+    ?(cmts.map(cm=>`<div class="cmt"><div class="cmt-meta">${cm.by_name||'—'} · ${new Date(cm.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div><div class="cmt-text">${cm.text}</div></div>`).join(''))
+    :'<p style="font-size:13px;color:var(--txm)">No comments yet.</p>';
+
+  const tlHtml=(tl||[]).map(t=>`
+    <div class="tli">
+      <div class="tl-ic ${icClass(t.state)}"><i class="ti ti-${icIcon(t.state)}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div class="tl-s">${t.label}</div>
+        <div class="tl-d">${t.detail||''}</div>
+        ${t.conductor_name&&t.conductor_name!=='—'?`<div class="tl-owner"><i class="ti ti-user"></i> Conducted by: <strong>${t.conductor_name}</strong></div>`:''}
+        ${t.updated_by_name?`<div class="tl-owner"><i class="ti ti-edit"></i> Updated by: ${t.updated_by_name}</div>`:''}
+        <div class="tl-dt">${new Date(t.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('dpBody').innerHTML=`
+    <div class="ds">
+      <div class="ds-title">Candidate info</div>
+      <div class="ir"><span class="il">Organization</span><span class="iv">${c.org||'—'}</span></div>
+      <div class="ir"><span class="il">Designation</span><span class="iv">${c.desig||'—'}</span></div>
+      <div class="ir"><span class="il">Experience</span><span class="iv">${c.exp||0} yrs total / ${c.rexp||0} yrs relevant</span></div>
+      <div class="ir"><span class="il">Education</span><span class="iv">${c.edu||'—'}</span></div>
+      <div class="ir"><span class="il">Notice period</span><span class="iv">${c.np||'—'}${c.np_neg?' (Negotiable)':''}</span></div>
+      <div class="ir"><span class="il">Location</span><span class="iv">${c.cloc||'—'} → ${c.ploc||'—'}</span></div>
+      <div class="ir"><span class="il">WFO / Rotational</span><span class="iv">${c.wfo||'—'} / ${c.shift||'—'}</span></div>
+      <div class="ir"><span class="il">Source</span><span class="iv">${c.src||'—'}</span></div>
+    </div>
+    <div class="ds">
+      <div class="ds-title">Process info</div>
+      <div class="ir"><span class="il">Days in pipeline</span><span class="iv">${proc.days||0} days</span></div>
+      <div class="ir"><span class="il">Interview rounds</span><span class="iv">${proc.rounds||2}</span></div>
+      <div class="ir"><span class="il">Current stage</span><span class="iv">${proc.stage}</span></div>
+      <div class="ir"><span class="il">Status</span><span class="iv">${badge(proc.status)}</span></div>
+    </div>
+    <div class="ds">
+      <div class="ds-title">Compensation</div>
+      ${salBlock}
+      <div class="ir"><span class="il">Current CTC</span><span class="iv ${showSal?'':'sal-hide'}">${ctcStr}</span></div>
+      <div class="ir"><span class="il">Expected CTC</span><span class="iv ${showSal?'':'sal-hide'}">${expCtcStr}</span></div>
+    </div>
+    <div class="ds">
+      <div class="ds-title">Process timeline</div>
+      <div class="tl">${tlHtml||'<p style="font-size:13px;color:var(--txm)">No timeline events yet.</p>'}</div>
+    </div>
+    <div class="ds">
+      <div class="ds-title">Comments (${(cmts||[]).length})</div>
+      ${cmtsHtml}
+    </div>
+    ${p.comment?`<div class="ds">
+      <div class="ds-title">Add comment</div>
+      <textarea class="fi" id="cmt-in" placeholder="Add a note or update…"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-p btn-sm" onclick="saveComment('${id}')"><i class="ti ti-check"></i> Save comment</button>
+      </div>
+    </div>`:''}
+  `;
+
+  // Action buttons
+  const acts=document.getElementById('dpActs');
+  acts.innerHTML='';
+  if(p.status){
+    const sb2=document.createElement('button'); sb2.className='btn btn-p';
+    sb2.innerHTML='<i class="ti ti-arrows-exchange"></i> Update status';
+    sb2.onclick=()=>{closeDP();openStatus(id);}; acts.appendChild(sb2);
+  }
+  if(p.edit){
+    const eb=document.createElement('button'); eb.className='btn';
+    eb.innerHTML='<i class="ti ti-edit"></i> Edit details';
+    eb.onclick=()=>{closeDP();openEdit(id);}; acts.appendChild(eb);
+  }
+  if(!p.status&&!p.edit){
+    acts.innerHTML='<span style="font-size:12px;color:var(--txm)"><i class="ti ti-eye" style="margin-right:4px"></i>View only — contact your TA to update</span>';
+  }
+  document.getElementById('dpOv').classList.add('open');
+  document.getElementById('dp').classList.add('open');
+}
+
+function closeDP(){
+  document.getElementById('dpOv').classList.remove('open');
+  document.getElementById('dp').classList.remove('open');
+  pendingSalId=null; pendingSalVal=null;
+}
+
+// Salary
+function pendingSal(id,val){
+  pendingSalId=id; pendingSalVal=val;
+  const lbl=document.getElementById('sal-lbl');
+  const row=document.getElementById('sal-save');
+  if(lbl) lbl.textContent=val?'✓ Will be visible to HM (unsaved)':'✗ Will be hidden from HM (unsaved)';
+  if(row) row.style.display='block';
+}
+async function saveSal(id){
+  if(pendingSalVal===null){toast('No change to save');return;}
+  const {error}=await sb.from('processes').update({sal_visible:pendingSalVal}).eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  const proc=processes.find(p=>p.id===id);
+  if(proc) proc.sal_visible=pendingSalVal;
+  pendingSalId=null; pendingSalVal=null;
+  renderTable(); openDP(id);
+  toast(pendingSalVal?'Salary now visible to HM':'Salary hidden from HM');
+}
+
+// Comment
+async function saveComment(id){
+  const el=document.getElementById('cmt-in');
+  const txt=(el?el.value:'').trim();
+  if(!txt){toast('Please type a comment');return;}
+  const {error}=await sb.from('comments').insert({
+    process_id:id,
+    by_id:currentUser.id,
+    by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
+    text:txt
+  });
+  if(error){toast('Error: '+error.message);return;}
+  openDP(id); toast('Comment saved');
+}
+
+// ── EDIT ──
+async function openEdit(id){
+  editId=id;
+  const proc=processes.find(p=>p.id===id); if(!proc) return;
+  const c=proc.candidates||{};
+  const g=(fid,val)=>{const el=document.getElementById(fid);if(el)el.value=val||'';};
+  g('e-role',proc.role); g('e-dept',proc.dept);
+  g('e-cname',c.name); g('e-email',c.email); g('e-phone',c.phone);
+  g('e-org',c.org); g('e-desig',c.desig);
+  g('e-exp',c.exp); g('e-rexp',c.rexp); g('e-np',c.np);
+  g('e-curctc',c.curctc); g('e-expmin',c.expctc_min); g('e-expmax',c.expctc_max);
+  const er=document.getElementById('e-rounds'); if(er) er.value=proc.rounds||2;
+  const enpNeg=document.getElementById('e-np-neg'); if(enpNeg) enpNeg.checked=!!c.np_neg;
+  const eexpNeg=document.getElementById('e-expctc-neg'); if(eexpNeg) eexpNeg.checked=!!c.expctc_neg;
+  populateDropdown('e-ta','TA',null);
+  populateDropdown('e-hm','HM',proc.current_hm_name);
+  openMo('moEdit');
+}
+
+async function saveEdit(){
+  const proc=processes.find(p=>p.id===editId); if(!proc) return;
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  // Update process
+  const procUp={role:g('e-role')||proc.role, dept:g('e-dept')||proc.dept, rounds:parseInt(g('e-rounds'))||proc.rounds, current_hm_name:g('e-hm')||proc.current_hm_name};
+  // Find TA id
+  const taName=document.getElementById('e-ta')?.value;
+  if(taName){
+    const tm=teamMembers.TA.find(m=>m.full_name===taName);
+    if(tm) procUp.assigned_ta=tm.id;
+  }
+  const {error:pe}=await sb.from('processes').update(procUp).eq('id',editId);
+  if(pe){toast('Error: '+pe.message);return;}
+  // Update candidate
+  const candUp={};
+  if(g('e-cname')) candUp.name=g('e-cname');
+  if(g('e-email')) candUp.email=g('e-email');
+  if(g('e-phone')) candUp.phone=g('e-phone');
+  if(g('e-org'))   candUp.org=g('e-org');
+  if(g('e-desig')) candUp.desig=g('e-desig');
+  if(g('e-exp'))   candUp.exp=parseFloat(g('e-exp'));
+  if(g('e-rexp'))  candUp.rexp=parseFloat(g('e-rexp'));
+  if(g('e-np'))    candUp.np=g('e-np');
+  candUp.np_neg=document.getElementById('e-np-neg')?.checked||false;
+  if(g('e-curctc'))candUp.curctc=parseFloat(g('e-curctc'));
+  if(g('e-expmin'))candUp.expctc_min=parseFloat(g('e-expmin'));
+  if(g('e-expmax'))candUp.expctc_max=parseFloat(g('e-expmax'));
+  candUp.expctc_neg=document.getElementById('e-expctc-neg')?.checked||false;
+  if(Object.keys(candUp).length&&proc.candidate_id){
+    await sb.from('candidates').update(candUp).eq('id',proc.candidate_id);
+  }
+  closeMo('moEdit');
+  await loadProcesses();
+  toast('Changes saved');
+}
+
+// ── STATUS UPDATE ──
+function openStatus(id){
+  statusId=id; selStageVal=null;
+  const proc=processes.find(p=>p.id===id); if(!proc) return;
+  document.getElementById('st-cname').textContent=(proc.candidates?.name)||'—';
+  document.getElementById('st-comment').value='';
+  document.getElementById('cmt-req').textContent='';
+  const preview=document.getElementById('auto-status-preview');
+  if(preview) preview.style.display='none';
+  // Stage list
+  const so=document.getElementById('stageOpts');
+  so.innerHTML=STAGES.map(s=>`<div class="stage-opt${s===proc.stage?' sel':''}" onclick="pickStage(this,'${s.replace(/'/g,"\\'")}')">${s}</div>`).join('');
+  selStageVal=proc.stage;
+  if(selStageVal) showAutoPreview(selStageVal);
+  // Conductor dropdown
+  const cond=document.getElementById('st-conductor');
+  const all=[...(teamMembers.HM||[]).map(m=>m.full_name),...(teamMembers.TA||[]).map(m=>m.full_name)];
+  cond.innerHTML=`<option value="">— Select person —</option>`+all.map(n=>`<option>${n}</option>`).join('');
+  openMo('moStatus');
+}
+
+function pickStage(el,stage){
+  document.querySelectorAll('.stage-opt').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel'); selStageVal=stage;
+  showAutoPreview(stage);
+}
+
+function showAutoPreview(stage){
+  const auto=stageToStatus(stage);
+  const preview=document.getElementById('auto-status-preview');
+  if(preview) preview.style.display='block';
+  document.getElementById('auto-status-val').textContent=auto.label;
+  document.getElementById('auto-status-reason').textContent=auto.reason;
+  const req=document.getElementById('cmt-req');
+  if(req) req.textContent=auto.status==='hold'?'(required)':'';
+}
+
+async function saveStatus(){
+  if(!selStageVal){toast('Please select a stage');return;}
+  const auto=stageToStatus(selStageVal);
+  const comment=(document.getElementById('st-comment').value||'').trim();
+  if(auto.status==='hold'&&!comment){toast('Comment is required for On hold');return;}
+  if(auto.status==='cancelled'&&!comment){toast('Comment is required for Cancelled');return;}
+  const proc=processes.find(p=>p.id===statusId); if(!proc) return;
+  const conductor=(document.getElementById('st-conductor').value||'').trim()||'—';
+
+  // Determine timeline state
+  let tlSt='active';
+  if(auto.status==='hold') tlSt='hold';
+  if(auto.status==='cancelled') tlSt='pend';
+  if(auto.status==='closed-selected'||auto.status==='closed-rejected') tlSt='done';
+  if(selStageVal.toLowerCase().includes('scheduled')) tlSt='active';
+
+  // Mark previous active timeline entries as done
+  await sb.from('timeline_events').update({state:'done'}).eq('process_id',statusId).eq('state','active');
+
+  // Insert new timeline event
+  const detail=comment||`Stage updated to "${selStageVal}"`;
+  await sb.from('timeline_events').insert({
+    process_id:statusId,
+    label:selStageVal,
+    detail,
+    conductor_name:conductor,
+    updated_by:currentUser.id,
+    updated_by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
+    state:tlSt
+  });
+
+  // Save comment if provided
+  if(comment){
+    await sb.from('comments').insert({
+      process_id:statusId,
+      by_id:currentUser.id,
+      by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
+      text:comment
+    });
+  }
+
+  // Update process stage and status
+  const {error}=await sb.from('processes').update({stage:selStageVal,status:auto.status}).eq('id',statusId);
+  if(error){toast('Error: '+error.message);return;}
+
+  closeMo('moStatus');
+  await loadProcesses();
+  toast('Updated — '+auto.label);
+}
+
+// ── NEW PROCESS ──
+async function submitNew(){
+  const name=(document.getElementById('f-cname').value||'').trim();
+  const role=(document.getElementById('f-role').value||'').trim();
+  if(!name||!role){toast('Candidate name and role are required');return;}
+  const taName=document.getElementById('f-ta')?.value||'';
+  const taRow=teamMembers.TA.find(m=>m.full_name===taName);
+  const expMin=parseFloat(document.getElementById('f-expmin').value)||null;
+  const expMax=parseFloat(document.getElementById('f-expmax').value)||null;
+  const ctcSplit=document.getElementById('f-ctc-split')?.checked;
+
+  // Insert candidate
+  const {data:cand,error:ce}=await sb.from('candidates').insert({
+    name,
+    email:document.getElementById('f-email').value||null,
+    phone:document.getElementById('f-phone').value||null,
+    org:document.getElementById('f-org').value||null,
+    desig:document.getElementById('f-desig').value||null,
+    exp:parseFloat(document.getElementById('f-exp').value)||0,
+    rexp:parseFloat(document.getElementById('f-rexp').value)||0,
+    edu:document.getElementById('f-edu').value||null,
+    np:document.getElementById('f-np').value||null,
+    np_neg:document.getElementById('f-np-neg')?.checked||false,
+    cloc:document.getElementById('f-cloc').value||null,
+    ploc:document.getElementById('f-ploc').value||null,
+    wfo:document.getElementById('f-wfo').value,
+    shift:document.getElementById('f-shift').value,
+    src:document.getElementById('f-src').value,
+    slots:document.getElementById('f-slots').value||null,
+    curctc:parseFloat(document.getElementById('f-curctc').value)||null,
+    ctc_fixed:ctcSplit?parseFloat(document.getElementById('f-ctc-fixed').value)||null:null,
+    ctc_variable:ctcSplit?parseFloat(document.getElementById('f-ctc-var').value)||null:null,
+    expctc_min:expMin,
+    expctc_max:expMax,
+    expctc_neg:document.getElementById('f-expctc-neg')?.checked||false,
+    created_by:currentUser.id
+  }).select().single();
+  if(ce){toast('Error creating candidate: '+ce.message);return;}
+
+  // Insert process
+  const {data:proc,error:pe}=await sb.from('processes').insert({
+    candidate_id:cand.id,
+    role, dept:document.getElementById('f-dept').value||null,
+    etype:document.getElementById('f-etype').value,
+    jloc:document.getElementById('f-jloc').value||null,
+    rounds:parseInt(document.getElementById('f-rounds').value)||2,
+    assigned_ta:taRow?.id||null,
+    stage:'Screening call completed',
+    status:'active',
+    sal_visible:true,
+    days:0,
+    created_by:currentUser.id
+  }).select().single();
+  if(pe){toast('Error creating process: '+pe.message);return;}
+
+  // Insert initial timeline event
+  await sb.from('timeline_events').insert({
+    process_id:proc.id,
+    label:'Screening call completed',
+    detail:'Process initiated',
+    conductor_name:currentProfile.full_name,
+    updated_by:currentUser.id,
+    updated_by_name:currentProfile.full_name+' ('+activeRole.toUpperCase()+')',
+    state:'active'
+  });
+
+  closeMo('moNew');
+  await loadProcesses();
+  toast('Process created for '+name);
+}
+
+// ── TEAM PAGE ──
+async function renderTeam(){
+  await loadTeam();
+  const p=perm();
+  document.getElementById('ta-add-row').style.display=p.manageTA?'flex':'none';
+  document.getElementById('hm-add-row').style.display=p.manageHM?'flex':'none';
+  document.getElementById('ta-card').style.opacity=(activeRole==='admin'||activeRole==='developer')?'1':(!p.manageTA?'0.55':'1');
+  document.getElementById('hm-card').style.opacity=activeRole==='hm'?'0.55':'1';
+  document.getElementById('teamPermBox').style.display=activeRole==='ta'?'block':'none';
+  renderMemberList('TA'); renderMemberList('HM');
+}
+
+function renderMemberList(type){
+  const members=teamMembers[type]||[];
+  const p=perm();
+  const canManage=(type==='TA'&&p.manageTA)||(type==='HM'&&p.manageHM);
+  const listEl=document.getElementById(type.toLowerCase()+'-list');
+  const countEl=document.getElementById(type.toLowerCase()+'-count');
+  if(countEl) countEl.textContent=members.length+' member'+(members.length!==1?'s':'');
+  if(!listEl) return;
+  if(!members.length){listEl.innerHTML=`<div class="empty-team">No ${type} members added yet</div>`;return;}
+  listEl.innerHTML=members.map((m,i)=>`
+    <div class="team-member">
+      <div class="tm-info">
+        <div class="tm-av tm-av-${type.toLowerCase()}">${initials(m.full_name)}</div>
+        <div><div class="tm-name">${m.full_name}</div><div class="tm-email">${m.email||'No email added'}</div></div>
+      </div>
+      ${canManage?`<button class="ib" onclick="removeMember('${m.id}','${type}')"><i class="ti ti-trash" style="color:var(--err-tx)"></i></button>`:''}
+    </div>`).join('');
+}
+
+async function addMember(type){
+  const p=perm();
+  if(type==='TA'&&!p.manageTA){toast('Only Admin can add TA members');return;}
+  if(type==='HM'&&!p.manageHM){toast('No permission to add HMs');return;}
+  const nameEl=document.getElementById(type.toLowerCase()+'-name-in');
+  const emailEl=document.getElementById(type.toLowerCase()+'-email-in');
+  const name=(nameEl?.value||'').trim();
+  if(!name){toast('Please enter a name');return;}
+  const {error}=await sb.from('team_members').insert({type,full_name:name,email:emailEl?.value?.trim()||null,added_by:currentUser.id});
+  if(error){toast('Error: '+error.message);return;}
+  if(nameEl) nameEl.value=''; if(emailEl) emailEl.value='';
+  await renderTeam();
+  toast(name+' added to '+type+' team');
+}
+
+async function removeMember(id,type){
+  const {error}=await sb.from('team_members').delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  await renderTeam();
+  toast('Member removed');
+}
+
+// ── DROPDOWNS ──
+function populateDropdown(selId,type,currentVal){
+  const sel=document.getElementById(selId); if(!sel) return;
+  const members=teamMembers[type]||[];
+  sel.innerHTML=members.map(m=>`<option value="${m.full_name}" ${m.full_name===currentVal?'selected':''}>${m.full_name}</option>`).join('');
+  if(!members.length) sel.innerHTML=`<option value="">No ${type} added yet — go to Team page</option>`;
+}
+
+// ── NAV ──
+function showPage(pageId,navEl){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  if(navEl) navEl.classList.add('active');
+  const titles={dashboard:['Recruitment dashboard','All active hiring processes — ESDS Chennai'],team:['Team management','Manage TA members and Hiring Managers']};
+  const t=titles[pageId]||titles.dashboard;
+  document.getElementById('pgTitle').textContent=t[0];
+  document.getElementById('pgSub').textContent=t[1];
+  if(pageId==='team') renderTeam();
+}
+
+function setFilter(el,f){
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); filter=f; renderTable();
+}
+
+function openMo(id){
+  if(id==='moNew'){ populateDropdown('f-ta','TA',''); }
+  document.getElementById(id).classList.add('open');
+}
+function closeMo(id){ document.getElementById(id).classList.remove('open'); }
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session?.user){
+    await initApp(session.user);
+  }
+  // Enter key on login
+  document.getElementById('loginPwd').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPwd').focus();});
+});
+</script>
+</body>
+</html>
