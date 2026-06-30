@@ -1,1232 +1,218 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Talent Nexus — ESDS</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f5f5f4;--surf:#fff;--surf2:#fafaf9;
-  --bdr:#e5e5e3;--bdrs:#d4d4d1;
-  --tx:#1a1a18;--tx2:#57574f;--txm:#9b9b90;
-  --acc:#2563eb;--acc-bg:#eff6ff;--acc-tx:#1d4ed8;
-  --ok-bg:#f0fdf4;--ok-tx:#15803d;
-  --warn-bg:#fffbeb;--warn-tx:#b45309;
-  --err-bg:#fef2f2;--err-tx:#b91c1c;
-  --pro-bg:#f5f3ff;--pro-tx:#6d28d9;
-  --r:8px;--font:'Inter',sans-serif
-}
-body{font-family:var(--font);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5;height:100vh;overflow:hidden}
-.app{display:flex;height:100vh}
-/* Sidebar */
-.sb{width:215px;min-width:215px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column}
-.sb-logo{padding:16px;border-bottom:1px solid var(--bdr)}
-.sb-mark{display:flex;align-items:center;gap:8px;margin-bottom:2px}
-.sb-icon{width:28px;height:28px;background:var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center}
-.sb-icon i{color:#fff;font-size:15px}
-.sb-title{font-size:14px;font-weight:600}
-.sb-sub{font-size:11px;color:var(--txm);margin-left:36px}
-.nav{padding:8px 0;flex:1;overflow-y:auto}
-.nav-sec{font-size:10px;font-weight:600;color:var(--txm);padding:10px 16px 4px;text-transform:uppercase;letter-spacing:.07em}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;font-size:13px;color:var(--tx2);cursor:pointer;transition:all .12s}
-.nav-item:hover{background:var(--bg);color:var(--tx)}
-.nav-item.active{background:var(--acc-bg);color:var(--acc-tx);font-weight:500;border-right:2px solid var(--acc)}
-.nav-item i{font-size:16px}
-.sb-user{padding:12px 16px;border-top:1px solid var(--bdr)}
-.u-chip{display:flex;align-items:center;gap:9px}
-.av{width:30px;height:30px;border-radius:50%;background:var(--acc-bg);color:var(--acc-tx);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.u-name{font-size:13px;font-weight:500}
-.u-role{font-size:11px;color:var(--txm)}
-/* Main */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.topbar{padding:13px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:var(--surf);flex-shrink:0}
-.pg-title{font-size:16px;font-weight:600}
-.pg-sub{font-size:12px;color:var(--txm);margin-top:1px}
-.tb-right{display:flex;align-items:center;gap:8px}
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid var(--bdrs);background:var(--surf);font-size:13px;cursor:pointer;color:var(--tx);font-family:var(--font);font-weight:500;transition:all .12s;white-space:nowrap}
-.btn:hover{background:var(--bg)}
-.btn i{font-size:15px}
-.btn-p{background:var(--acc);color:#fff;border-color:var(--acc)}
-.btn-p:hover{background:#1d4ed8;border-color:#1d4ed8}
-.btn-ok{background:var(--ok-bg);color:var(--ok-tx);border-color:#bbf7d0}
-.btn-err{background:var(--err-bg);color:var(--err-tx);border-color:#fecaca}
-.btn-sm{padding:5px 11px;font-size:12px}
-/* Pages */
-.page{display:none;flex:1;flex-direction:column;overflow:hidden}
-.page.active{display:flex}
-/* Content */
-.content{padding:20px 22px;flex:1;overflow-y:auto}
-/* Metrics */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.mc{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;padding:15px 17px}
-.mc-lbl{font-size:12px;color:var(--txm);margin-bottom:4px}
-.mc-val{font-size:26px;font-weight:600;line-height:1}
-.mc-sub{font-size:11px;color:var(--txm);margin-top:4px}
-/* Filters / search */
-.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px}
-.sec-title{font-size:14px;font-weight:600}
-.filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.sw{position:relative}
-.sw i{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--txm);pointer-events:none}
-.si{padding:6px 10px 6px 30px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--surf);font-size:13px;color:var(--tx);font-family:var(--font);width:200px;outline:none}
-.si:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.fb{padding:5px 13px;border-radius:20px;border:1px solid var(--bdr);background:var(--surf);font-size:12px;cursor:pointer;color:var(--tx2);font-family:var(--font);font-weight:500;transition:all .12s}
-.fb:hover{color:var(--tx);border-color:var(--bdrs)}
-.fb.active{background:var(--acc);color:#fff;border-color:var(--acc)}
-/* Table */
-.tw{background:var(--surf);border-radius:10px;border:1px solid var(--bdr);overflow:hidden}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead tr{border-bottom:1px solid var(--bdr);background:var(--surf2)}
-thead th{padding:10px 15px;text-align:left;font-size:11px;font-weight:600;color:var(--txm);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
-tbody tr{border-bottom:1px solid var(--bdr);cursor:pointer;transition:background .1s}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:var(--acc-bg)}
-td{padding:11px 15px;vertical-align:middle}
-.c-name{font-weight:500}
-.c-meta{font-size:11px;color:var(--txm);margin-top:2px}
-.r-dept{font-size:11px;color:var(--txm);margin-top:2px}
-/* Badges */
-.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
-.b-active{background:var(--ok-bg);color:var(--ok-tx)}
-.b-hold{background:var(--warn-bg);color:var(--warn-tx)}
-.b-cancelled{background:var(--err-bg);color:var(--err-tx)}
-.b-scheduled{background:var(--acc-bg);color:var(--acc-tx)}
-.b-closed-ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
-.b-closed-err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
-.sp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
-.sd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.d-acc{background:var(--acc)}.d-ok{background:#16a34a}.d-hold{background:#d97706}.d-err{background:#dc2626}.d-pend{background:var(--bdrs)}
-.ta-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2)}
-.ta-av{width:22px;height:22px;border-radius:50%;background:var(--pro-bg);color:var(--pro-tx);font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.acts{display:flex;align-items:center;gap:4px}
-.ib{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--bdr);background:transparent;cursor:pointer;color:var(--txm);transition:all .12s;flex-shrink:0}
-.ib:hover{background:var(--bg);color:var(--tx);border-color:var(--bdrs)}
-.ib i{font-size:14px}
-.ib-acc{color:var(--acc-tx);border-color:var(--acc-tx)}
-.ib-acc:hover{background:var(--acc-bg)}
-.empty-c{text-align:center;padding:48px!important;color:var(--txm)}
-.empty-c i{font-size:28px;display:block;margin:0 auto 8px;opacity:.5}
-/* Detail panel */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;display:none}
-.ov.open{display:block}
-.dp{position:fixed;top:0;right:0;width:500px;height:100vh;background:var(--surf);border-left:1px solid var(--bdr);z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease}
-.dp.open{transform:translateX(0)}
-.dp-hd{padding:16px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;gap:12px}
-.dp-name{font-size:15px;font-weight:600}
-.dp-meta{font-size:12px;color:var(--txm);margin-top:3px}
-.dp-body{padding:20px;flex:1;overflow-y:auto}
-.dp-acts{padding:14px 20px;border-top:1px solid var(--bdr);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
-.ds{margin-bottom:22px}
-.ds-title{font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--bdr)}
-.ir{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;font-size:13px;gap:12px}
-.il{color:var(--txm);flex-shrink:0}
-.iv{font-weight:500;text-align:right}
-/* Timeline */
-.tl{display:flex;flex-direction:column}
-.tli{display:flex;gap:12px;padding:10px 0;position:relative}
-.tli:not(:last-child)::after{content:'';position:absolute;left:11px;top:34px;bottom:-10px;width:1px;background:var(--bdr)}
-.tl-ic{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px}
-.ic-done{background:var(--ok-bg);color:var(--ok-tx)}
-.ic-active{background:var(--acc-bg);color:var(--acc-tx)}
-.ic-pend{background:var(--bg);color:var(--txm);border:1px solid var(--bdr)}
-.ic-hold{background:var(--warn-bg);color:var(--warn-tx)}
-.tl-s{font-size:13px;font-weight:500}
-.tl-d{font-size:12px;color:var(--tx2);margin-top:2px}
-.tl-owner{font-size:11px;color:var(--txm);margin-top:3px;display:flex;align-items:center;gap:4px}
-.tl-owner i{font-size:12px}
-.tl-dt{font-size:11px;color:var(--txm);margin-top:2px}
-/* Comments */
-.cmt{background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
-.cmt-meta{font-size:11px;color:var(--txm);margin-bottom:4px}
-.cmt-text{font-size:13px}
-/* Salary toggle */
-.tg-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:10px;gap:12px}
-.tg{position:relative;width:38px;height:21px;cursor:pointer;flex-shrink:0}
-.tg input{opacity:0;width:0;height:0;position:absolute}
-.tg-sl{position:absolute;inset:0;border-radius:21px;background:var(--bdrs);transition:.2s}
-.tg input:checked+.tg-sl{background:var(--acc)}
-.tg-sl::before{content:'';position:absolute;width:15px;height:15px;left:3px;bottom:3px;border-radius:50%;background:#fff;transition:.2s}
-.tg input:checked+.tg-sl::before{transform:translateX(17px)}
-.sal-hide{filter:blur(5px);user-select:none;pointer-events:none}
-.sal-locked{font-size:11px;color:var(--txm);text-align:center;padding:6px;background:var(--surf2);border-radius:var(--r);margin-top:4px}
-/* Forms */
-.fi{padding:8px 11px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--bg);font-size:13px;color:var(--tx);font-family:var(--font);width:100%;outline:none}
-.fi:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-textarea.fi{min-height:76px;resize:vertical;line-height:1.5}
-select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b9b90' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
-/* Modals */
-.mo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
-.mo.open{display:flex}
-.modal{background:var(--surf);border-radius:12px;border:1px solid var(--bdr);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
-.modal-sm{max-width:420px}
-.mhd{padding:16px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surf);z-index:1}
-.m-title{font-size:15px;font-weight:600}
-.mbody{padding:22px}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.fgroup{display:flex;flex-direction:column;gap:5px}
-.flbl{font-size:12px;font-weight:500;color:var(--tx2)}
-.fdiv{grid-column:1/-1;font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.07em;padding:6px 0 4px;border-bottom:1px solid var(--bdr);margin-top:6px}
-.mft{padding:14px 22px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surf)}
-/* Status options */
-.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.so{padding:12px 14px;border-radius:var(--r);border:1px solid var(--bdr);cursor:pointer;transition:all .12s;text-align:center}
-.so:hover{border-color:var(--acc);background:var(--acc-bg)}
-.so.sel{border-color:var(--acc);background:var(--acc-bg);box-shadow:0 0 0 2px rgba(37,99,235,.2)}
-.so-icon{font-size:20px;margin-bottom:5px}
-.so-label{font-size:12px;font-weight:600}
-.so-desc{font-size:11px;color:var(--txm);margin-top:2px}
-/* Stage selector */
-.stage-opts{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;margin-bottom:14px;padding:2px}
-.stage-opt{padding:9px 12px;border-radius:var(--r);border:1px solid var(--bdr);cursor:pointer;font-size:13px;transition:all .12s}
-.stage-opt:hover{border-color:var(--acc);background:var(--acc-bg)}
-.stage-opt.sel{border-color:var(--acc);background:var(--acc-bg);font-weight:500}
-/* Role options */
-.ro{padding:13px 15px;border-radius:var(--r);border:1px solid var(--bdr);cursor:pointer;transition:all .12s;margin-bottom:8px}
-.ro:hover{border-color:var(--acc);background:var(--acc-bg)}
-.ro.sel{border-color:var(--acc);background:var(--acc-bg)}
-.ro-t{font-size:13px;font-weight:500;display:flex;align-items:center;gap:7px}
-.ro-d{font-size:11px;color:var(--txm);margin-top:3px}
-/* Team page */
-.team-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:4px}
-.team-card{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;overflow:hidden}
-.team-card-hd{padding:14px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
-.team-card-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
-.team-list{padding:8px 0}
-.team-member{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--bdr);transition:background .1s}
-.team-member:last-child{border-bottom:none}
-.team-member:hover{background:var(--bg)}
-.tm-info{display:flex;align-items:center;gap:10px}
-.tm-av{width:32px;height:32px;border-radius:50%;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.tm-av-ta{background:var(--pro-bg);color:var(--pro-tx)}
-.tm-av-hm{background:var(--ok-bg);color:var(--ok-tx)}
-.tm-name{font-size:13px;font-weight:500}
-.tm-email{font-size:11px;color:var(--txm);margin-top:1px}
-.tm-acts{display:flex;gap:5px}
-.empty-team{padding:24px 16px;text-align:center;color:var(--txm);font-size:13px}
-/* Add member inline */
-.add-member-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--bdr);background:var(--surf2)}
-.add-member-row .fi{flex:1}
-/* Permission notice */
-.perm-box{background:var(--warn-bg);border:1px solid #fde68a;border-radius:var(--r);padding:11px 13px;font-size:12px;color:var(--warn-tx);display:flex;align-items:flex-start;gap:7px}
-.perm-box i{font-size:15px;flex-shrink:0;margin-top:1px}
-/* Toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transition:transform .22s ease;white-space:nowrap;pointer-events:none}
-.toast.show{transform:translateX(-50%) translateY(0)}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--bdrs);border-radius:3px}
-</style>
-</head>
-<body>
-<div class="app">
-  <!-- Sidebar -->
-  <aside class="sb">
-    <div class="sb-logo">
-      <div class="sb-mark">
-        <div class="sb-icon"><i class="ti ti-users"></i></div>
-        <span class="sb-title">Talent Nexus</span>
-      </div>
-      <div class="sb-sub">Talent Acquisition Portal</div>
-    </div>
-    <nav class="nav">
-      <div class="nav-sec">Main</div>
-      <div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
-      <div class="nav-item" onclick="showPage('dashboard',this)"><i class="ti ti-users"></i> All processes</div>
-      <div class="nav-item" onclick="showPage('dashboard',this)"><i class="ti ti-calendar"></i> Scheduled</div>
-      <div class="nav-sec">Manage</div>
-      <div class="nav-item" id="nav-team" onclick="showPage('team',this)"><i class="ti ti-id-badge"></i> Team</div>
-      <div class="nav-item"><i class="ti ti-chart-bar"></i> Reports</div>
-      <div class="nav-item"><i class="ti ti-settings"></i> Settings</div>
-    </nav>
-    <div class="sb-user">
-      <div class="u-chip">
-        <div class="av" id="sbAv">SC</div>
-        <div>
-          <div class="u-name" id="sbName">Sachu</div>
-          <div class="u-role" id="sbRole">Admin</div>
-        </div>
-      </div>
-    </div>
-  </aside>
+-- ================================================
+-- TALENT NEXUS — Supabase Schema
+-- Run this in Supabase SQL Editor (all at once)
+-- ================================================
 
-  <!-- Main area -->
-  <div class="main">
-    <!-- Topbar -->
-    <div class="topbar">
-      <div>
-        <div class="pg-title" id="pgTitle">Recruitment dashboard</div>
-        <div class="pg-sub" id="pgSub">All active hiring processes — ESDS Chennai</div>
-      </div>
-      <div class="tb-right">
-        <button class="btn" onclick="openMo('moRole')"><i class="ti ti-eye"></i> Viewing as: <strong id="roleLabel">Admin</strong></button>
-        <button class="btn btn-p" id="newBtn" onclick="openMo('moNew')"><i class="ti ti-plus"></i> New process</button>
-      </div>
-    </div>
+-- 1. USER PROFILES (extends Supabase auth.users)
+create table public.profiles (
+  id uuid references auth.users(id) on delete cascade primary key,
+  full_name text not null,
+  email text not null,
+  role text not null check (role in ('admin','ta','hm','developer')),
+  is_active boolean default true,
+  created_at timestamptz default now()
+);
 
-    <!-- Dashboard page -->
-    <div class="page active" id="page-dashboard">
-      <div class="content">
-        <div class="metrics">
-          <div class="mc"><div class="mc-lbl">Active processes</div><div class="mc-val" id="m1">0</div><div class="mc-sub">Across all TAs</div></div>
-          <div class="mc"><div class="mc-lbl">Interviews this week</div><div class="mc-val" id="m2">0</div><div class="mc-sub">L1 &amp; L2 combined</div></div>
-          <div class="mc"><div class="mc-lbl">On hold</div><div class="mc-val" id="m3">0</div><div class="mc-sub">Pending reschedule</div></div>
-          <div class="mc"><div class="mc-lbl">Avg. days in pipeline</div><div class="mc-val" id="m4">0d</div><div class="mc-sub">Active processes only</div></div>
-        </div>
-        <div class="sec-hd">
-          <div class="sec-title">Candidate pipeline</div>
-          <div class="filters">
-            <div class="sw"><i class="ti ti-search"></i><input class="si" id="srch" placeholder="Search candidate, role…" oninput="renderTable()"></div>
-            <button class="fb active" onclick="setFilter(this,'all')">All</button>
-            <button class="fb" onclick="setFilter(this,'active')">Active</button>
-            <button class="fb" onclick="setFilter(this,'hold')">On hold</button>
-            <button class="fb" onclick="setFilter(this,'scheduled')">Scheduled</button>
-            <button class="fb" onclick="setFilter(this,'cancelled')">Closed</button>
-          </div>
-        </div>
-        <div class="tw">
-          <table>
-            <thead><tr><th>Candidate</th><th>Role</th><th>Current stage</th><th>Status</th><th>TA owner</th><th>HM (current)</th><th>Days</th><th></th></tr></thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+-- 2. TEAM MEMBERS
+create table public.team_members (
+  id uuid default gen_random_uuid() primary key,
+  type text not null check (type in ('TA','HM')),
+  full_name text not null,
+  email text,
+  added_by uuid references public.profiles(id),
+  created_at timestamptz default now()
+);
 
-    <!-- Team page -->
-    <div class="page" id="page-team">
-      <div class="content">
-        <div class="sec-hd" style="margin-bottom:16px">
-          <div>
-            <div class="sec-title">Team management</div>
-            <div style="font-size:12px;color:var(--txm);margin-top:2px">Manage TA members and Hiring Managers available for processes</div>
-          </div>
-        </div>
-        <div id="teamPermBox" style="margin-bottom:16px;display:none">
-          <div class="perm-box"><i class="ti ti-info-circle"></i><span>As a <strong>TA</strong>, you can add or remove Hiring Managers only. Contact Admin to manage TA members.</span></div>
-        </div>
-        <div class="team-cols">
-          <!-- TA list -->
-          <div class="team-card" id="ta-card">
-            <div class="team-card-hd">
-              <div class="team-card-title"><i class="ti ti-user-check" style="color:var(--pro-tx)"></i> Talent Acquisition (TA)</div>
-              <span style="font-size:12px;color:var(--txm)" id="ta-count">0 members</span>
-            </div>
-            <div class="team-list" id="ta-list"></div>
-            <div class="add-member-row" id="ta-add-row">
-              <input class="fi" id="ta-name-in" placeholder="Full name" style="flex:1">
-              <input class="fi" id="ta-email-in" placeholder="Email (optional)" style="flex:1.5">
-              <button class="btn btn-p btn-sm" onclick="addMember('TA')"><i class="ti ti-plus"></i> Add</button>
-            </div>
-          </div>
-          <!-- HM list -->
-          <div class="team-card" id="hm-card">
-            <div class="team-card-hd">
-              <div class="team-card-title"><i class="ti ti-briefcase" style="color:var(--ok-tx)"></i> Hiring Managers (HM)</div>
-              <span style="font-size:12px;color:var(--txm)" id="hm-count">0 members</span>
-            </div>
-            <div class="team-list" id="hm-list"></div>
-            <div class="add-member-row" id="hm-add-row">
-              <input class="fi" id="hm-name-in" placeholder="Full name" style="flex:1">
-              <input class="fi" id="hm-email-in" placeholder="Email (optional)" style="flex:1.5">
-              <button class="btn btn-p btn-sm" onclick="addMember('HM')"><i class="ti ti-plus"></i> Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+-- 3. CANDIDATES
+create table public.candidates (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  email text,
+  phone text,
+  org text,
+  desig text,
+  exp numeric,
+  rexp numeric,
+  edu text,
+  np text,
+  np_neg boolean default false,
+  cloc text,
+  ploc text,
+  wfo text,
+  shift text,
+  src text,
+  slots text,
+  curctc numeric,
+  ctc_fixed numeric,
+  ctc_variable numeric,
+  expctc_min numeric,
+  expctc_max numeric,
+  expctc_neg boolean default false,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz default now()
+);
 
-<!-- Detail panel -->
-<div class="ov" id="dpOv" onclick="closeDP()"></div>
-<div class="dp" id="dp">
-  <div class="dp-hd">
-    <div style="min-width:0"><div class="dp-name" id="dpName"></div><div class="dp-meta" id="dpMeta"></div></div>
-    <button class="ib" onclick="closeDP()"><i class="ti ti-x"></i></button>
-  </div>
-  <div class="dp-body" id="dpBody"></div>
-  <div class="dp-acts" id="dpActs"></div>
-</div>
+-- 4. PROCESSES
+create table public.processes (
+  id uuid default gen_random_uuid() primary key,
+  candidate_id uuid references public.candidates(id) on delete cascade,
+  role text not null,
+  dept text,
+  etype text default 'Full time',
+  jloc text,
+  rounds integer default 2,
+  assigned_ta uuid references public.profiles(id),
+  current_hm_name text,
+  stage text default 'Screening call completed',
+  status text default 'active' check (status in ('active','scheduled','hold','cancelled','closed-selected','closed-rejected')),
+  sal_visible boolean default true,
+  days integer default 0,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 
-<!-- New process modal -->
-<div class="mo" id="moNew" onclick="if(event.target===this)closeMo('moNew')">
-  <div class="modal">
-    <div class="mhd"><div class="m-title">Start new recruitment process</div><button class="ib" onclick="closeMo('moNew')"><i class="ti ti-x"></i></button></div>
-    <div class="mbody">
-      <div class="fg">
-        <div class="fdiv">Job details</div>
-        <div class="fgroup"><label class="flbl">Job title / role *</label><input class="fi" id="f-role" placeholder="e.g. Senior DevOps Engineer"></div>
-        <div class="fgroup"><label class="flbl">Department</label><input class="fi" id="f-dept" placeholder="e.g. Infrastructure"></div>
-        <div class="fgroup"><label class="flbl">Employment type</label><select class="fi" id="f-etype"><option>Full time</option><option>Contract</option><option>Internship</option></select></div>
-        <div class="fgroup"><label class="flbl">Job location</label><input class="fi" id="f-jloc" placeholder="e.g. Chennai"></div>
-        <div class="fgroup"><label class="flbl">Interview rounds</label><select class="fi" id="f-rounds"><option value="2">2 rounds (L1 Tech + HR)</option><option value="3">3 rounds (L1 + L2 Tech + HR)</option><option value="4">4 rounds (L1 + L2 + L3 + HR)</option></select></div>
-        <div class="fgroup"><label class="flbl">Assigned TA *</label><select class="fi" id="f-ta"></select></div>
-        <div class="fdiv">Candidate details</div>
-        <div class="fgroup"><label class="flbl">Full name *</label><input class="fi" id="f-cname" placeholder="Candidate full name"></div>
-        <div class="fgroup"><label class="flbl">Personal email</label><input class="fi" id="f-email" type="email" placeholder="email@example.com"></div>
-        <div class="fgroup"><label class="flbl">Phone number</label><input class="fi" id="f-phone" placeholder="+91 XXXXX XXXXX"></div>
-        <div class="fgroup"><label class="flbl">Current organization</label><input class="fi" id="f-org" placeholder="Company name"></div>
-        <div class="fgroup"><label class="flbl">Current designation</label><input class="fi" id="f-desig" placeholder="Current role title"></div>
-        <div class="fgroup"><label class="flbl">Total experience (yrs)</label><input class="fi" id="f-exp" type="number" min="0" step="0.5" placeholder="e.g. 5"></div>
-        <div class="fgroup"><label class="flbl">Relevant experience (yrs)</label><input class="fi" id="f-rexp" type="number" min="0" step="0.5" placeholder="e.g. 3"></div>
-        <div class="fgroup"><label class="flbl">Highest qualification</label><input class="fi" id="f-edu" placeholder="e.g. B.Tech CSE"></div>
-        <div class="fgroup">
-          <label class="flbl">Notice period</label>
-          <input class="fi" id="f-np" placeholder="e.g. 30 days, Immediate, 2 months">
-          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--tx2);cursor:pointer">
-            <input type="checkbox" id="f-np-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
-          </label>
-        </div>
-        <div class="fgroup"><label class="flbl">Current location</label><input class="fi" id="f-cloc" placeholder="City"></div>
-        <div class="fgroup"><label class="flbl">Preferred location</label><input class="fi" id="f-ploc" placeholder="City"></div>
-        <div class="fgroup" style="grid-column:1/-1">
-          <label class="flbl">Current CTC (LPA)</label>
-          <input class="fi" id="f-curctc" type="number" min="0" step="0.1" placeholder="e.g. 8.5" style="margin-bottom:8px">
-          <div id="f-ctc-split-toggle" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
-              <input type="checkbox" id="f-ctc-split" onchange="toggleCTCSplit('f')" style="width:14px;height:14px;cursor:pointer"> Show Fixed / Variable split
-            </label>
-          </div>
-          <div id="f-ctc-split-fields" style="display:none;gap:8px;grid-template-columns:1fr 1fr">
-            <div class="fgroup"><label class="flbl">Fixed (LPA)</label><input class="fi" id="f-ctc-fixed" type="number" min="0" step="0.1" placeholder="e.g. 6"></div>
-            <div class="fgroup"><label class="flbl">Variable (LPA)</label><input class="fi" id="f-ctc-variable" type="number" min="0" step="0.1" placeholder="e.g. 2.5"></div>
-          </div>
-        </div>
-        <div class="fgroup" style="grid-column:1/-1">
-          <label class="flbl">Expected CTC (LPA)</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="fgroup"><label class="flbl" style="font-weight:400">Min</label><input class="fi" id="f-expctc-min" type="number" min="0" step="0.5" placeholder="e.g. 10"></div>
-            <div class="fgroup"><label class="flbl" style="font-weight:400">Max</label><input class="fi" id="f-expctc-max" type="number" min="0" step="0.5" placeholder="e.g. 12"></div>
-          </div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
-            <input type="checkbox" id="f-expctc-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
-          </label>
-        </div>
-        <div class="fgroup"><label class="flbl">WFO confirmation</label><select class="fi" id="f-wfo"><option>Yes</option><option>No</option></select></div>
-        <div class="fgroup"><label class="flbl">Rotational shifts ok</label><select class="fi" id="f-shift"><option>Yes</option><option>No</option></select></div>
-        <div class="fgroup"><label class="flbl">Source portal</label><select class="fi" id="f-src"><option>Naukri</option><option>LinkedIn</option><option>Indeed</option><option>Referral</option><option>Other</option></select></div>
-        <div class="fgroup"><label class="flbl">Preferred interview slots</label><input class="fi" id="f-slots" placeholder="e.g. Weekdays 10am–12pm"></div>
-      </div>
-    </div>
-    <div class="mft"><button class="btn" onclick="closeMo('moNew')">Cancel</button><button class="btn btn-p" onclick="submitNew()"><i class="ti ti-check"></i> Create process</button></div>
-  </div>
-</div>
+-- 5. PROCESS ROUNDS
+create table public.process_rounds (
+  id uuid default gen_random_uuid() primary key,
+  process_id uuid references public.processes(id) on delete cascade,
+  round_number integer not null,
+  round_name text not null,
+  scheduled_at timestamptz,
+  outcome text check (outcome in ('selected','rejected','noshow','pending')),
+  created_at timestamptz default now()
+);
 
-<!-- Edit modal -->
-<div class="mo" id="moEdit" onclick="if(event.target===this)closeMo('moEdit')">
-  <div class="modal">
-    <div class="mhd"><div class="m-title">Edit process details</div><button class="ib" onclick="closeMo('moEdit')"><i class="ti ti-x"></i></button></div>
-    <div class="mbody">
-      <div class="fg">
-        <div class="fdiv">Job details</div>
-        <div class="fgroup"><label class="flbl">Job title / role</label><input class="fi" id="e-role"></div>
-        <div class="fgroup"><label class="flbl">Department</label><input class="fi" id="e-dept"></div>
-        <div class="fgroup"><label class="flbl">Interview rounds</label><select class="fi" id="e-rounds"><option value="2">2 rounds (L1 Tech + HR)</option><option value="3">3 rounds (L1 + L2 Tech + HR)</option><option value="4">4 rounds (L1 + L2 + L3 + HR)</option></select></div>
-        <div class="fgroup"><label class="flbl">Assigned TA</label><select class="fi" id="e-ta"></select></div>
-        <div class="fgroup"><label class="flbl">HM (current round)</label><select class="fi" id="e-hm"></select></div>
-        <div class="fdiv">Candidate details</div>
-        <div class="fgroup"><label class="flbl">Full name</label><input class="fi" id="e-cname"></div>
-        <div class="fgroup"><label class="flbl">Personal email</label><input class="fi" id="e-email"></div>
-        <div class="fgroup"><label class="flbl">Phone</label><input class="fi" id="e-phone"></div>
-        <div class="fgroup"><label class="flbl">Current organization</label><input class="fi" id="e-org"></div>
-        <div class="fgroup"><label class="flbl">Current designation</label><input class="fi" id="e-desig"></div>
-        <div class="fgroup"><label class="flbl">Total experience (yrs)</label><input class="fi" id="e-exp" type="number"></div>
-        <div class="fgroup"><label class="flbl">Relevant experience (yrs)</label><input class="fi" id="e-rexp" type="number"></div>
-        <div class="fgroup">
-          <label class="flbl">Notice period</label>
-          <input class="fi" id="e-np" placeholder="e.g. 30 days, Immediate">
-          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--tx2);cursor:pointer">
-            <input type="checkbox" id="e-np-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
-          </label>
-        </div>
-        <div class="fgroup" style="grid-column:1/-1">
-          <label class="flbl">Current CTC (LPA)</label>
-          <input class="fi" id="e-curctc" type="number" min="0" step="0.1" placeholder="e.g. 8.5" style="margin-bottom:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
-            <input type="checkbox" id="e-ctc-split" onchange="toggleCTCSplit('e')" style="width:14px;height:14px;cursor:pointer"> Show Fixed / Variable split
-          </label>
-          <div id="e-ctc-split-fields" style="display:none;gap:8px;grid-template-columns:1fr 1fr;margin-top:8px">
-            <div class="fgroup"><label class="flbl">Fixed (LPA)</label><input class="fi" id="e-ctc-fixed" type="number" min="0" step="0.1" placeholder="e.g. 6"></div>
-            <div class="fgroup"><label class="flbl">Variable (LPA)</label><input class="fi" id="e-ctc-variable" type="number" min="0" step="0.1" placeholder="e.g. 2.5"></div>
-          </div>
-        </div>
-        <div class="fgroup" style="grid-column:1/-1">
-          <label class="flbl">Expected CTC (LPA)</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-            <div class="fgroup"><label class="flbl" style="font-weight:400">Min</label><input class="fi" id="e-expctc-min" type="number" min="0" step="0.5" placeholder="e.g. 10"></div>
-            <div class="fgroup"><label class="flbl" style="font-weight:400">Max</label><input class="fi" id="e-expctc-max" type="number" min="0" step="0.5" placeholder="e.g. 12"></div>
-          </div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);cursor:pointer">
-            <input type="checkbox" id="e-expctc-neg" style="width:14px;height:14px;cursor:pointer"> Negotiable
-          </label>
-        </div>
-      </div>
-    </div>
-    <div class="mft"><button class="btn" onclick="closeMo('moEdit')">Cancel</button><button class="btn btn-p" onclick="saveEdit()"><i class="ti ti-device-floppy"></i> Save changes</button></div>
-  </div>
-</div>
+-- 6. ROUND INTERVIEWERS (supports multiple HMs per round)
+create table public.round_interviewers (
+  id uuid default gen_random_uuid() primary key,
+  round_id uuid references public.process_rounds(id) on delete cascade,
+  hm_id uuid references public.profiles(id),
+  hm_name text not null,
+  confirmed boolean default false,
+  created_at timestamptz default now()
+);
 
-<!-- Status modal -->
-<div class="mo" id="moStatus" onclick="if(event.target===this)closeMo('moStatus')">
-  <div class="modal modal-sm">
-    <div class="mhd"><div class="m-title">Update process status</div><button class="ib" onclick="closeMo('moStatus')"><i class="ti ti-x"></i></button></div>
-    <div class="mbody">
-      <p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Updating: <strong id="st-cname"></strong></p>
-      <div class="fgroup" style="margin-bottom:14px">
-        <label class="flbl" style="margin-bottom:6px">1. Select current stage</label>
-        <div class="stage-opts" id="stageOpts"></div>
-      </div>
-      <!-- Auto-status preview -->
-      <div id="auto-status-preview" style="display:none;margin-bottom:14px;padding:10px 13px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--surf2)">
-        <div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Status will be automatically set to</div>
-        <div id="auto-status-val" style="font-size:13px;font-weight:600"></div>
-        <div id="auto-status-reason" style="font-size:11px;color:var(--txm);margin-top:2px"></div>
-      </div>
-      <div class="fgroup" style="margin-bottom:14px">
-        <label class="flbl" style="margin-bottom:8px">2. Who conducted this step</label>
-        <select class="fi" id="st-conductor"></select>
-      </div>
-      <div class="fgroup">
-        <label class="flbl">3. Comment / reason <span id="cmt-req" style="color:var(--err-tx)"></span></label>
-        <textarea class="fi" id="st-comment" style="margin-top:5px" placeholder="Add details about this update…"></textarea>
-      </div>
-    </div>
-    <div class="mft"><button class="btn" onclick="closeMo('moStatus')">Cancel</button><button class="btn btn-p" onclick="saveStatus()"><i class="ti ti-device-floppy"></i> Save update</button></div>
-  </div>
-</div>
+-- 7. TEF RATINGS (one row per HM per round)
+create table public.tef_ratings (
+  id uuid default gen_random_uuid() primary key,
+  round_id uuid references public.process_rounds(id) on delete cascade,
+  hm_id uuid references public.profiles(id),
+  hm_name text,
+  c1 integer check (c1 between 1 and 5),   -- Passion and Motivation
+  c2 integer check (c2 between 1 and 5),   -- Commitment and Enthusiasm
+  c3 integer check (c3 between 1 and 5),   -- Growth and Continuous Improvement
+  c4 integer check (c4 between 1 and 5),   -- Adaptability and Resilience
+  c5 integer check (c5 between 1 and 5),   -- Collaboration and Communication
+  c6 integer check (c6 between 1 and 5),   -- Leadership and Accountability
+  c7 integer check (c7 between 1 and 5),   -- Empathy and Humility
+  c8 integer check (c8 between 1 and 5),   -- Strategic and Analytical Thinking
+  c9 integer check (c9 between 1 and 5),   -- Problem Solving and Conflict Management
+  c10 integer check (c10 between 1 and 5), -- Integrity and Risk-Taking
+  comments text,
+  hire_reason text,
+  no_hire_reason text,
+  submitted_at timestamptz default now()
+);
 
-<!-- Role modal -->
-<div class="mo" id="moRole" onclick="if(event.target===this)closeMo('moRole')">
-  <div class="modal modal-sm">
-    <div class="mhd"><div class="m-title">Switch view role</div><button class="ib" onclick="closeMo('moRole')"><i class="ti ti-x"></i></button></div>
-    <div class="mbody">
-      <p style="font-size:13px;color:var(--txm);margin-bottom:14px">Preview how the dashboard looks for each role.</p>
-      <div class="ro sel" id="ro-Admin" onclick="switchRole('Admin')"><div class="ro-t"><i class="ti ti-shield" style="color:var(--acc-tx)"></i> Admin</div><div class="ro-d">Full access — create, edit, update all processes. Can manage TA and HM lists.</div></div>
-      <div class="ro" id="ro-TA" onclick="switchRole('TA')"><div class="ro-t"><i class="ti ti-user-check" style="color:var(--ok-tx)"></i> TA (owner)</div><div class="ro-d">Create and manage own processes. Can add/remove HMs. Toggle salary visibility.</div></div>
-      <div class="ro" id="ro-HM" onclick="switchRole('HM')"><div class="ro-t"><i class="ti ti-briefcase" style="color:var(--warn-tx)"></i> Hiring manager</div><div class="ro-d">View only across all processes. Salary hidden unless Admin/TA toggles on.</div></div>
-    </div>
-  </div>
-</div>
+-- 8. TEF HR SECTION
+create table public.tef_hr (
+  id uuid default gen_random_uuid() primary key,
+  process_id uuid references public.processes(id) on delete cascade,
+  hr_id uuid references public.profiles(id),
+  strengths text,
+  weaknesses text,
+  overall_observation text,
+  reason_to_hire text,
+  designation text,
+  grade text,
+  reporting text,
+  department text,
+  location text,
+  recommendation boolean,
+  submitted_at timestamptz default now()
+);
 
-<div class="toast" id="toast"></div>
+-- 9. TIMELINE EVENTS
+create table public.timeline_events (
+  id uuid default gen_random_uuid() primary key,
+  process_id uuid references public.processes(id) on delete cascade,
+  label text not null,
+  detail text,
+  conductor_name text,
+  updated_by uuid references public.profiles(id),
+  updated_by_name text,
+  state text default 'active' check (state in ('done','active','hold','pend')),
+  created_at timestamptz default now()
+);
 
-<script>
-// ── Permission matrix ──
-const PERMS = {
-  Admin: { create:true, edit:true, status:true, salary:true, comment:true, manageTA:true, manageHM:true },
-  TA:    { create:true, edit:true, status:true, salary:true, comment:true, manageTA:false, manageHM:true },
-  HM:    { create:false,edit:false,status:false,salary:false,comment:true, manageTA:false, manageHM:false }
-};
+-- 10. COMMENTS
+create table public.comments (
+  id uuid default gen_random_uuid() primary key,
+  process_id uuid references public.processes(id) on delete cascade,
+  by_id uuid references public.profiles(id),
+  by_name text,
+  text text not null,
+  created_at timestamptz default now()
+);
 
-const STAGES = [
-  'Screening call completed',
-  'Profile shared with HM',
-  'HM review — shortlisting',
-  'Profile rejected by HM',
-  'Scheduling in progress',
-  'L1 scheduled',
-  'L1 completed — Selected',
-  'L1 completed — Rejected',
-  'No show — L1',
-  'L2 scheduled',
-  'L2 completed — Selected',
-  'L2 completed — Rejected',
-  'No show — L2',
-  'L3 scheduled',
-  'L3 completed — Selected',
-  'L3 completed — Rejected',
-  'HR round scheduled',
-  'HR round completed — Selected',
-  'HR round completed — Rejected',
-  'Drop off',
-  'Process closed'
-];
+-- ================================================
+-- ROW LEVEL SECURITY
+-- ================================================
+alter table public.profiles enable row level security;
+alter table public.team_members enable row level security;
+alter table public.candidates enable row level security;
+alter table public.processes enable row level security;
+alter table public.process_rounds enable row level security;
+alter table public.round_interviewers enable row level security;
+alter table public.tef_ratings enable row level security;
+alter table public.tef_hr enable row level security;
+alter table public.timeline_events enable row level security;
+alter table public.comments enable row level security;
 
-const SAMPLE_TEAM = {
-  TA: [
-    {name:'Priya M', email:'priya.m@esds.co.in'},
-    {name:'Arjun R', email:'arjun.r@esds.co.in'},
-    {name:'Divya K', email:'divya.k@esds.co.in'}
-  ],
-  HM: [
-    {name:'Karthik R', email:'karthik.r@esds.co.in'},
-    {name:'Suresh V',  email:'suresh.v@esds.co.in'},
-    {name:'Neha G',   email:'neha.g@esds.co.in'},
-    {name:'Deepak S', email:'deepak.s@esds.co.in'},
-    {name:'Pradeep K',email:'pradeep.k@esds.co.in'},
-    {name:'Anand T',  email:'anand.t@esds.co.in'}
-  ]
-};
+-- Read: all authenticated users
+create policy "read all" on public.profiles        for select using (auth.role() = 'authenticated');
+create policy "read all" on public.team_members    for select using (auth.role() = 'authenticated');
+create policy "read all" on public.candidates      for select using (auth.role() = 'authenticated');
+create policy "read all" on public.processes       for select using (auth.role() = 'authenticated');
+create policy "read all" on public.process_rounds  for select using (auth.role() = 'authenticated');
+create policy "read all" on public.round_interviewers for select using (auth.role() = 'authenticated');
+create policy "read all" on public.tef_ratings     for select using (auth.role() = 'authenticated');
+create policy "read all" on public.tef_hr          for select using (auth.role() = 'authenticated');
+create policy "read all" on public.timeline_events for select using (auth.role() = 'authenticated');
+create policy "read all" on public.comments        for select using (auth.role() = 'authenticated');
 
-const SAMPLE_DATA = [
-  {id:1,role:'Senior DevOps Engineer',dept:'Infrastructure',etype:'Full time',jloc:'Chennai',rounds:2,ta:'Priya M',
-   name:'Ravi Shankar',email:'ravi.shankar@email.com',phone:'+91 98765 43210',org:'TCS',desig:'DevOps Engineer',
-   exp:7,rexp:5,edu:'B.Tech CSE',np:'30 days',cloc:'Chennai',ploc:'Chennai',curctc:'12',expctc:'15–18',
-   wfo:'Yes',shift:'Yes',src:'Naukri',slots:'Weekdays 10am–12pm',
-   stage:'L1 scheduled',status:'scheduled',hm:'Karthik R',days:8,salVis:true,comments:[],
-   timeline:[
-     {label:'Screening call completed',detail:'7 yrs exp, WFO confirmed, 30 days NP',date:'Jun 12',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'Profile shared with HM',detail:'Shared to Karthik R with 2 other profiles',date:'Jun 13',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'HM review — shortlisting',detail:'Karthik R selected this profile',date:'Jun 14',state:'done',conductor:'Karthik R',updatedBy:'Priya M (TA)'},
-     {label:'Scheduling in progress',detail:'Slots confirmed from both parties via Teams',date:'Jun 16',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'L1 scheduled',detail:'Jun 28, 11:00 AM — Teams link sent',date:'Jun 17',state:'active',conductor:'Karthik R',updatedBy:'Priya M (TA)'}
-   ]},
-  {id:2,role:'Cloud Solutions Architect',dept:'Cloud',etype:'Full time',jloc:'Chennai',rounds:3,ta:'Arjun R',
-   name:'Meena Iyer',email:'meena.iyer@email.com',phone:'+91 97654 32109',org:'Infosys',desig:'Cloud Consultant',
-   exp:9,rexp:8,edu:'M.Tech',np:'60 days',cloc:'Bangalore',ploc:'Chennai',curctc:'18',expctc:'22–25',
-   wfo:'Yes',shift:'No',src:'LinkedIn',slots:'Weekdays after 3pm',
-   stage:'L2 scheduled',status:'scheduled',hm:'Suresh V',days:15,salVis:false,comments:[],
-   timeline:[
-     {label:'Screening call completed',detail:'9 yrs cloud exp, open to relocation',date:'Jun 8',state:'done',conductor:'Arjun R',updatedBy:'Arjun R (TA)'},
-     {label:'Profile shared with HM',detail:'Sent to Suresh V',date:'Jun 9',state:'done',conductor:'Arjun R',updatedBy:'Arjun R (TA)'},
-     {label:'HM review — shortlisting',detail:'Shortlisted for L1',date:'Jun 10',state:'done',conductor:'Suresh V',updatedBy:'Arjun R (TA)'},
-     {label:'L1 completed — Selected',detail:'Strong technical skills noted',date:'Jun 16',state:'done',conductor:'Rajiv N',updatedBy:'Arjun R (TA)'},
-     {label:'L2 scheduled',detail:'Jun 27, 3:00 PM — Suresh V conducting',date:'Jun 19',state:'active',conductor:'Suresh V',updatedBy:'Arjun R (TA)'}
-   ]},
-  {id:3,role:'Network Engineer',dept:'IT Infrastructure',etype:'Full time',jloc:'Chennai',rounds:2,ta:'Priya M',
-   name:'Arun Prasad',email:'arun.prasad@email.com',phone:'+91 96543 21098',org:'HCL',desig:'Network Analyst',
-   exp:4,rexp:4,edu:'B.E. ECE',np:'Immediate',cloc:'Chennai',ploc:'Chennai',curctc:'6',expctc:'8–9',
-   wfo:'Yes',shift:'Yes',src:'Naukri',slots:'Any time',
-   stage:'HM review — shortlisting',status:'active',hm:'Deepak S',days:3,salVis:true,comments:[],
-   timeline:[
-     {label:'Screening call completed',detail:'4 yrs network exp, immediate joiner',date:'Jun 20',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'Profile shared with HM',detail:'2 profiles sent to Deepak S',date:'Jun 21',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'HM review — shortlisting',detail:'Awaiting Deepak S response',date:'—',state:'active',conductor:'Deepak S',updatedBy:'Priya M (TA)'}
-   ]},
-  {id:4,role:'HR Business Partner',dept:'Human Resources',etype:'Full time',jloc:'Chennai',rounds:2,ta:'Divya K',
-   name:'Lakshmi Nair',email:'lakshmi.nair@email.com',phone:'+91 95432 10987',org:'Wipro',desig:'HR Generalist',
-   exp:6,rexp:6,edu:'MBA HR',np:'45 days',cloc:'Mumbai',ploc:'Chennai',curctc:'10',expctc:'13–15',
-   wfo:'Yes',shift:'No',src:'LinkedIn',slots:'Weekdays 11am–1pm',
-   stage:'On hold',status:'hold',hm:'Neha G',days:20,salVis:true,
-   comments:[{by:'Divya K (TA)',date:'Jun 14',text:'Neha G on leave until Jul 5. Lakshmi informed. Resumes first week of July.'}],
-   timeline:[
-     {label:'Screening call completed',detail:'Strong HR background',date:'Jun 5',state:'done',conductor:'Divya K',updatedBy:'Divya K (TA)'},
-     {label:'Profile shared with HM',detail:'Sent to Neha G',date:'Jun 6',state:'done',conductor:'Divya K',updatedBy:'Divya K (TA)'},
-     {label:'HM review — shortlisting',detail:'Shortlisted for L1',date:'Jun 7',state:'done',conductor:'Neha G',updatedBy:'Divya K (TA)'},
-     {label:'L1 postponed',detail:'Jun 14 interview postponed — HM unavailable',date:'Jun 13',state:'done',conductor:'—',updatedBy:'Divya K (TA)'},
-     {label:'On hold',detail:'HM Neha G on leave until Jul 5. Candidate informed.',date:'Jun 14',state:'hold',conductor:'—',updatedBy:'Divya K (TA)'}
-   ]},
-  {id:5,role:'Sales Manager — Enterprise',dept:'Sales',etype:'Full time',jloc:'Chennai',rounds:3,ta:'Arjun R',
-   name:'Vikram Shetty',email:'vikram.shetty@email.com',phone:'+91 94321 09876',org:'Zoho',desig:'Sr. Sales Executive',
-   exp:8,rexp:5,edu:'MBA Marketing',np:'30 days',cloc:'Chennai',ploc:'Chennai',curctc:'14',expctc:'18–20',
-   wfo:'Yes',shift:'No',src:'Referral',slots:'Weekdays 2–5pm',
-   stage:'HR round completed — Selected',status:'active',hm:'Pradeep K',days:28,salVis:true,comments:[],
-   timeline:[
-     {label:'Screening call completed',detail:'Strong enterprise sales record',date:'May 28',state:'done',conductor:'Arjun R',updatedBy:'Arjun R (TA)'},
-     {label:'Profile shared with HM',detail:'Sent to Pradeep K',date:'May 29',state:'done',conductor:'Arjun R',updatedBy:'Arjun R (TA)'},
-     {label:'HM review — shortlisting',detail:'Selected for interview',date:'May 30',state:'done',conductor:'Pradeep K',updatedBy:'Arjun R (TA)'},
-     {label:'L1 completed — Selected',detail:'Strong domain knowledge',date:'Jun 5',state:'done',conductor:'Karthik R',updatedBy:'Arjun R (TA)'},
-     {label:'L2 completed — Selected',detail:'Leadership assessment cleared',date:'Jun 12',state:'done',conductor:'Suresh V',updatedBy:'Arjun R (TA)'},
-     {label:'HR round completed — Selected',detail:'Cleared — doc verification pending',date:'Jun 20',state:'done',conductor:'Pradeep K',updatedBy:'Arjun R (TA)'}
-   ]},
-  {id:6,role:'Frontend Developer',dept:'Product Engineering',etype:'Full time',jloc:'Chennai',rounds:2,ta:'Priya M',
-   name:'Divya Krishnan',email:'divya.k@email.com',phone:'+91 93210 98765',org:'Freshworks',desig:'UI Developer',
-   exp:3,rexp:3,edu:'B.Tech IT',np:'60 days',cloc:'Chennai',ploc:'Chennai',curctc:'7',expctc:'10–11',
-   wfo:'Yes',shift:'No',src:'Naukri',slots:'Weekdays 10am–12pm',
-   stage:'Profile rejected by HM',status:'cancelled',hm:'Anand T',days:5,salVis:true,
-   comments:[{by:'Priya M (TA)',date:'Jun 20',text:'Anand T: Needs 5+ yrs exp. Profile closed.'}],
-   timeline:[
-     {label:'Screening call completed',detail:'3 yrs React experience',date:'Jun 18',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'Profile shared with HM',detail:'3 profiles sent to Anand T',date:'Jun 19',state:'done',conductor:'Priya M',updatedBy:'Priya M (TA)'},
-     {label:'Profile rejected by HM',detail:'Needs 5+ yrs exp for this role',date:'Jun 20',state:'pend',conductor:'Anand T',updatedBy:'Priya M (TA)'}
-   ]}
-];
+-- Write: all authenticated (role enforcement done in app layer)
+create policy "write" on public.candidates         for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.processes          for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.process_rounds     for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.round_interviewers for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.tef_ratings        for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.tef_hr             for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.timeline_events    for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.comments           for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "write" on public.team_members       for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
-// ── State ──
-let data=[], team={TA:[],HM:[]}, role='Admin', filter='all', editId=null, statusId=null, selStatusVal=null, selStageVal=null;
+-- Profiles: own row only for write
+create policy "own profile read"   on public.profiles for select using (auth.uid() = id);
+create policy "own profile insert" on public.profiles for insert with check (auth.uid() = id);
+create policy "own profile update" on public.profiles for update using (auth.uid() = id);
 
-// ── Users for each role (demo) ──
-const ROLE_USERS = {
-  Admin: {init:'SC', name:'Sachu', label:'Admin'},
-  TA:    {init:'PM', name:'Priya M', label:'TA'},
-  HM:    {init:'KR', name:'Karthik R', label:'Hiring Manager'}
-};
+-- ================================================
+-- AUTO-TIMESTAMP TRIGGER
+-- ================================================
+create or replace function update_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
 
-function currentUserLabel() {
-  const u = ROLE_USERS[role];
-  return `${u.name} (${u.label})`;
-}
+create trigger processes_updated_at
+  before update on public.processes
+  for each row execute function update_updated_at();
 
-// ── Persistence ──
-function loadAll() {
-  try {
-    const d = localStorage.getItem('esds_data_v4');
-    const t = localStorage.getItem('esds_team_v4');
-    data = d ? JSON.parse(d) : JSON.parse(JSON.stringify(SAMPLE_DATA));
-    team = t ? JSON.parse(t) : JSON.parse(JSON.stringify(SAMPLE_TEAM));
-  } catch(e) {
-    data = JSON.parse(JSON.stringify(SAMPLE_DATA));
-    team = JSON.parse(JSON.stringify(SAMPLE_TEAM));
-  }
-}
-function saveAll() {
-  try {
-    localStorage.setItem('esds_data_v4', JSON.stringify(data));
-    localStorage.setItem('esds_team_v4', JSON.stringify(team));
-  } catch(e) {}
-}
-
-// ── Helpers ──
-function today() { return new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'}); }
-function initials(n) { return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
-function badge(s) {
-  const m={
-    scheduled:'b-scheduled', active:'b-active', hold:'b-hold',
-    cancelled:'b-cancelled',
-    'closed-selected':'b-closed-ok', 'closed-rejected':'b-closed-err'
-  };
-  const l={
-    scheduled:'Scheduled', active:'Active', hold:'On hold',
-    cancelled:'Cancelled',
-    'closed-selected':'Closed — Selected', 'closed-rejected':'Closed — Rejected'
-  };
-  return `<span class="badge ${m[s]||'b-active'}">${l[s]||s}</span>`;
-}
-function dotCls(stage, status) {
-  if(status==='hold') return 'd-hold';
-  if(status==='cancelled') return 'd-err';
-  if((stage||'').toLowerCase().includes('scheduled')) return 'd-acc';
-  if((stage||'').toLowerCase().includes('completed')||stage==='Process closed') return 'd-ok';
-  return 'd-acc';
-}
-function tlState(status, stage) {
-  if(status==='hold') return 'hold';
-  if(status==='cancelled') return 'pend';
-  if((stage||'').includes('completed')||stage==='Process closed') return 'done';
-  if((stage||'').toLowerCase().includes('scheduled')) return 'active';
-  return 'active';
-}
-function icClass(state) {
-  if(state==='done')   return 'ic-done';
-  if(state==='active') return 'ic-active';
-  if(state==='hold')   return 'ic-hold';
-  return 'ic-pend';
-}
-function icIcon(state) {
-  if(state==='done')   return 'check';
-  if(state==='active') return 'loader-2';
-  if(state==='hold')   return 'pause';
-  return 'circle';
-}
-
-// ── Populate dropdowns from team ──
-function populateDropdown(selId, type, currentVal) {
-  const sel = document.getElementById(selId); if(!sel) return;
-  const members = team[type]||[];
-  sel.innerHTML = members.map(m=>`<option value="${m.name}" ${m.name===currentVal?'selected':''}>${m.name}</option>`).join('');
-  if(!members.length) sel.innerHTML = `<option value="">No ${type} members added yet</option>`;
-}
-
-// ── Navigation ──
-function showPage(pageId, navEl) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+pageId).classList.add('active');
-  if(navEl) navEl.classList.add('active');
-  if(pageId==='team') renderTeam();
-  const titles = {dashboard:['Recruitment dashboard','All active hiring processes — ESDS Chennai'], team:['Team management','Manage TA members and Hiring Managers']};
-  const t = titles[pageId]||titles.dashboard;
-  document.getElementById('pgTitle').textContent = t[0];
-  document.getElementById('pgSub').textContent   = t[1];
-}
-
-// ── Metrics ──
-function metrics() {
-  const act = data.filter(c=>c.status==='active'||c.status==='scheduled');
-  document.getElementById('m1').textContent = act.length;
-  document.getElementById('m2').textContent = data.filter(c=>c.status==='scheduled').length;
-  document.getElementById('m3').textContent = data.filter(c=>c.status==='hold').length;
-  const avg = act.length ? Math.round(act.reduce((s,c)=>s+(c.days||0),0)/act.length) : 0;
-  document.getElementById('m4').textContent = avg+'d';
-}
-
-// ── Table ──
-function renderTable() {
-  const p = PERMS[role];
-  const q = (document.getElementById('srch').value||'').toLowerCase();
-  const rows = data.filter(c=>{
-    if(filter==='active'    && c.status!=='active')    return false;
-    if(filter==='hold'      && c.status!=='hold')      return false;
-    if(filter==='scheduled' && c.status!=='scheduled') return false;
-    if(filter==='cancelled' && c.status!=='cancelled'&&c.status!=='closed-selected'&&c.status!=='closed-rejected') return false;
-    if(q && !c.name.toLowerCase().includes(q) && !c.role.toLowerCase().includes(q) && !(c.ta||'').toLowerCase().includes(q)) return false;
-    return true;
-  });
-  const tb = document.getElementById('tbody');
-  if(!rows.length) {
-    tb.innerHTML='<tr><td colspan="8" class="empty-c"><i class="ti ti-inbox"></i>No processes match this filter</td></tr>';
-    return;
-  }
-  tb.innerHTML = rows.map(c=>`
-    <tr onclick="openDP(${c.id})">
-      <td><div class="c-name">${c.name}</div><div class="c-meta">${c.org} · ${c.exp}y / ${c.rexp}y rel</div></td>
-      <td><div>${c.role}</div><div class="r-dept">${c.dept}</div></td>
-      <td><span class="sp"><span class="sd ${dotCls(c.stage,c.status)}"></span>${c.stage}</span></td>
-      <td>${badge(c.status)}</td>
-      <td><div class="ta-chip"><div class="ta-av">${initials(c.ta)}</div>${c.ta}</div></td>
-      <td style="font-size:13px;color:var(--tx2)">${c.hm}</td>
-      <td style="font-size:13px;color:var(--tx2);text-align:center">${c.days||0}d</td>
-      <td><div class="acts" onclick="event.stopPropagation()">
-        <button class="ib" title="View" onclick="openDP(${c.id})"><i class="ti ti-eye"></i></button>
-        ${p.edit   ? `<button class="ib" title="Edit" onclick="openEdit(${c.id})"><i class="ti ti-edit"></i></button>`:''}
-        ${p.status ? `<button class="ib ib-acc" title="Update status" onclick="openStatus(${c.id})"><i class="ti ti-arrows-exchange"></i></button>`:''}
-      </div></td>
-    </tr>`).join('');
-}
-
-// ── Detail panel ──
-function openDP(id) {
-  const c = data.find(x=>x.id===id); if(!c) return;
-  const p = PERMS[role];
-  // showSal: Admin/TA always see salary. HM sees it only if TA/Admin toggled it on.
-  const showSal = (role==='Admin'||role==='TA') ? true : c.salVis;
-  document.getElementById('dpName').textContent = c.name;
-  document.getElementById('dpMeta').textContent = c.role+' · '+c.dept;
-
-  // Salary toggle — only Admin and TA can control it
-  let salBlock = '';
-  if(role==='Admin'||role==='TA') {
-    salBlock = `<div class="tg-row">
-      <div>
-        <div style="font-size:12px;font-weight:500">Show salary to hiring manager</div>
-        <div style="font-size:11px;color:var(--txm);margin-top:2px" id="sal-status-lbl">${c.salVis?'✓ Currently visible to HM':'✗ Currently hidden from HM'}</div>
-      </div>
-      <label class="tg"><input type="checkbox" id="sal-toggle-chk" ${c.salVis?'checked':''} onchange="pendingSalChange(${c.id},this.checked)"><span class="tg-sl"></span></label>
-    </div>
-    <div id="sal-save-row" style="display:none;margin-bottom:8px">
-      <button class="btn btn-p btn-sm" onclick="toggleSal(${c.id})"><i class="ti ti-device-floppy"></i> Save salary visibility</button>
-    </div>`;
-  } else {
-    // HM view — show salary only if salVis is true
-    if(!c.salVis) {
-      salBlock = `<div class="sal-locked"><i class="ti ti-eye-off" style="margin-right:4px"></i>Salary hidden by TA — contact your TA to reveal</div>`;
-    }
-  }
-
-  const cmts = (c.comments||[]).length
-    ? c.comments.map(cm=>`<div class="cmt"><div class="cmt-meta">${cm.by} · ${cm.date}</div><div class="cmt-text">${cm.text}</div></div>`).join('')
-    : '<p style="font-size:13px;color:var(--txm)">No comments yet.</p>';
-
-  document.getElementById('dpBody').innerHTML = `
-    <div class="ds">
-      <div class="ds-title">Candidate info</div>
-      <div class="ir"><span class="il">Organization</span><span class="iv">${c.org}</span></div>
-      <div class="ir"><span class="il">Designation</span><span class="iv">${c.desig}</span></div>
-      <div class="ir"><span class="il">Experience</span><span class="iv">${c.exp} yrs total / ${c.rexp} yrs relevant</span></div>
-      <div class="ir"><span class="il">Education</span><span class="iv">${c.edu||'—'}</span></div>
-      <div class="ir"><span class="il">Notice period</span><span class="iv">${c.np}</span></div>
-      <div class="ir"><span class="il">Location (current → preferred)</span><span class="iv">${c.cloc} → ${c.ploc}</span></div>
-      <div class="ir"><span class="il">WFO / Rotational shifts</span><span class="iv">${c.wfo} / ${c.shift}</span></div>
-      <div class="ir"><span class="il">Source</span><span class="iv">${c.src}</span></div>
-      <div class="ir"><span class="il">Preferred slots</span><span class="iv">${c.slots||'—'}</span></div>
-    </div>
-    <div class="ds">
-      <div class="ds-title">Process info</div>
-      <div class="ir"><span class="il">Assigned TA</span><span class="iv">${c.ta}</span></div>
-      <div class="ir"><span class="il">Hiring manager</span><span class="iv">${c.hm}</span></div>
-      <div class="ir"><span class="il">Interview rounds</span><span class="iv">${c.rounds}</span></div>
-      <div class="ir"><span class="il">Days in pipeline</span><span class="iv">${c.days||0} days</span></div>
-      <div class="ir"><span class="il">Current stage</span><span class="iv">${c.stage}</span></div>
-      <div class="ir"><span class="il">Overall status</span><span class="iv">${badge(c.status)}</span></div>
-    </div>
-    <div class="ds">
-      <div class="ds-title">Compensation</div>
-      ${salBlock}
-      <div class="ir"><span class="il">Current CTC</span><span class="iv ${showSal?'':'sal-hide'}">${c.curctc} LPA${c.ctcFixed?` (Fixed: ${c.ctcFixed} + Variable: ${c.ctcVariable})`:''}</span></div>
-      <div class="ir"><span class="il">Expected CTC</span><span class="iv ${showSal?'':'sal-hide'}">${c.expctc} LPA${c.expctcNeg?' — Negotiable':''}</span></div>
-      <div class="ir"><span class="il">Notice period</span><span class="iv">${c.np}${c.npNeg?' (Negotiable)':''}</span></div>
-    </div>
-    <div class="ds">
-      <div class="ds-title">Process timeline</div>
-      <div class="tl">${(c.timeline||[]).map(t=>`
-        <div class="tli">
-          <div class="tl-ic ${icClass(t.state)}"><i class="ti ti-${icIcon(t.state)}"></i></div>
-          <div style="flex:1;min-width:0">
-            <div class="tl-s">${t.label}</div>
-            <div class="tl-d">${t.detail}</div>
-            ${t.conductor&&t.conductor!=='—'?`<div class="tl-owner"><i class="ti ti-user"></i> Conducted by: <strong>${t.conductor}</strong></div>`:''}
-            ${t.updatedBy?`<div class="tl-owner"><i class="ti ti-edit"></i> Updated by: ${t.updatedBy}</div>`:''}
-            <div class="tl-dt">${t.date}</div>
-          </div>
-        </div>`).join('')}</div>
-    </div>
-    <div class="ds">
-      <div class="ds-title">Comments (${(c.comments||[]).length})</div>
-      ${cmts}
-    </div>
-    ${p.comment?`
-    <div class="ds">
-      <div class="ds-title">Add comment</div>
-      <textarea class="fi" id="cmt-in" placeholder="Add a note or update…"></textarea>
-      <div style="display:flex;justify-content:flex-end;margin-top:10px">
-        <button class="btn btn-p btn-sm" onclick="saveComment(${c.id})"><i class="ti ti-check"></i> Save comment</button>
-      </div>
-    </div>`:''}
-  `;
-
-  // Bottom action buttons per permission
-  const acts = document.getElementById('dpActs');
-  acts.innerHTML = '';
-  if(p.status) {
-    const sb=document.createElement('button'); sb.className='btn btn-p';
-    sb.innerHTML='<i class="ti ti-arrows-exchange"></i> Update status';
-    sb.onclick=()=>{closeDP();openStatus(c.id);}; acts.appendChild(sb);
-  }
-  if(p.edit) {
-    const eb=document.createElement('button'); eb.className='btn';
-    eb.innerHTML='<i class="ti ti-edit"></i> Edit details';
-    eb.onclick=()=>{closeDP();openEdit(c.id);}; acts.appendChild(eb);
-  }
-  if(!p.status&&!p.edit) {
-    acts.innerHTML='<span style="font-size:12px;color:var(--txm)"><i class="ti ti-eye" style="margin-right:4px"></i>View only — contact your TA to update this process</span>';
-  }
-
-  document.getElementById('dpOv').classList.add('open');
-  document.getElementById('dp').classList.add('open');
-}
-
-function closeDP() {
-  document.getElementById('dpOv').classList.remove('open');
-  document.getElementById('dp').classList.remove('open');
-}
-
-let pendingSalVal = null;
-function pendingSalChange(id, val) {
-  pendingSalVal = val;
-  const lbl = document.getElementById('sal-status-lbl');
-  const row = document.getElementById('sal-save-row');
-  if(lbl) lbl.textContent = val ? '✓ Will be visible to HM (unsaved)' : '✗ Will be hidden from HM (unsaved)';
-  if(row) row.style.display = 'block';
-}
-function toggleSal(id) {
-  const c = data.find(x=>x.id===id); if(!c) return;
-  if(pendingSalVal === null) { toast('No change to save'); return; }
-  c.salVis = pendingSalVal; pendingSalVal = null;
-  saveAll(); openDP(id); renderTable();
-  toast(c.salVis ? 'Salary now visible to HM' : 'Salary hidden from HM');
-}
-
-function saveComment(id) {
-  const el=document.getElementById('cmt-in');
-  const txt=(el?el.value:'').trim(); if(!txt){toast('Please type a comment');return;}
-  const c=data.find(x=>x.id===id); if(!c) return;
-  c.comments.push({by:currentUserLabel(), date:today(), text:txt});
-  saveAll(); openDP(id); toast('Comment saved');
-}
-
-// ── Edit modal ──
-function openEdit(id) {
-  editId=id;
-  const c=data.find(x=>x.id===id); if(!c) return;
-  const g=(fid,val)=>{const el=document.getElementById(fid);if(el)el.value=val||'';};
-  g('e-role',c.role); g('e-dept',c.dept);
-  g('e-exp',c.exp);   g('e-rexp',c.rexp);
-  g('e-cname',c.name);g('e-email',c.email);g('e-phone',c.phone);
-  g('e-org',c.org);   g('e-desig',c.desig);g('e-np',c.np);
-  g('e-curctc',c.curctc);
-  // CTC split
-  const eCtcSplit = document.getElementById('e-ctc-split');
-  if(eCtcSplit) { eCtcSplit.checked = !!(c.ctcFixed||c.ctcVariable); toggleCTCSplit('e'); }
-  g('e-ctc-fixed',c.ctcFixed||''); g('e-ctc-variable',c.ctcVariable||'');
-  // Expected CTC min/max
-  if(c.expctc && c.expctc!=='—') {
-    const parts = c.expctc.split('–');
-    g('e-expctc-min', parts[0]||''); g('e-expctc-max', parts[1]||'');
-  }
-  // Negotiable checkboxes
-  const enp = document.getElementById('e-np-neg'); if(enp) enp.checked = !!c.npNeg;
-  const eexp = document.getElementById('e-expctc-neg'); if(eexp) eexp.checked = !!c.expctcNeg;
-  // Rounds
-  const er=document.getElementById('e-rounds');
-  if(er) er.value=c.rounds||2;
-  // TA dropdown — admin sees all TAs, TA sees all TAs
-  populateDropdown('e-ta','TA',c.ta);
-  // HM dropdown
-  populateDropdown('e-hm','HM',c.hm);
-  openMo('moEdit');
-}
-
-function saveEdit() {
-  const c=data.find(x=>x.id===editId); if(!c) return;
-  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};
-  if(g('e-role'))  c.role  =g('e-role');
-  if(g('e-dept'))  c.dept  =g('e-dept');
-  c.rounds = parseInt(document.getElementById('e-rounds').value)||c.rounds;
-  if(g('e-ta'))    c.ta    =g('e-ta');
-  if(g('e-hm'))    c.hm    =g('e-hm');
-  if(g('e-cname')) c.name  =g('e-cname');
-  c.email  =g('e-email'); c.phone=g('e-phone');
-  if(g('e-org'))   c.org   =g('e-org');
-  if(g('e-desig')) c.desig =g('e-desig');
-  if(g('e-exp'))   c.exp   =parseInt(g('e-exp'))||c.exp;
-  if(g('e-rexp'))  c.rexp  =parseInt(g('e-rexp'))||c.rexp;
-  if(g('e-np'))    c.np    =g('e-np');
-  c.npNeg = document.getElementById('e-np-neg') ? document.getElementById('e-np-neg').checked : c.npNeg;
-  if(g('e-curctc'))c.curctc=g('e-curctc');
-  const eSplit = document.getElementById('e-ctc-split');
-  if(eSplit && eSplit.checked) {
-    c.ctcFixed    = document.getElementById('e-ctc-fixed').value||'';
-    c.ctcVariable = document.getElementById('e-ctc-variable').value||'';
-  }
-  const eMin = document.getElementById('e-expctc-min') ? document.getElementById('e-expctc-min').value : '';
-  const eMax = document.getElementById('e-expctc-max') ? document.getElementById('e-expctc-max').value : '';
-  if(eMin||eMax) c.expctc = eMin&&eMax ? eMin+'–'+eMax : eMin||eMax;
-  c.expctcNeg = document.getElementById('e-expctc-neg') ? document.getElementById('e-expctc-neg').checked : c.expctcNeg;
-  saveAll(); closeMo('moEdit'); renderTable(); metrics();
-  toast('Changes saved for '+c.name);
-}
-
-// ── Status modal ──
-function openStatus(id) {
-  statusId=id; selStatusVal=null; selStageVal=null;
-  const c=data.find(x=>x.id===id); if(!c) return;
-  document.getElementById('st-cname').textContent=c.name;
-  document.getElementById('st-comment').value='';
-  document.getElementById('cmt-req').textContent='';
-  // Stage options
-  const so=document.getElementById('stageOpts');
-  so.innerHTML=STAGES.map(s=>`<div class="stage-opt${s===c.stage?' sel':''}" onclick="pickStage(this,'${s.replace(/'/g,"\\'")}')">${s}</div>`).join('');
-  selStageVal=c.stage;
-  // Show auto-status preview for current stage
-  const preview=document.getElementById('auto-status-preview');
-  if(preview&&selStageVal){
-    const auto=stageToStatus(selStageVal);
-    preview.style.display='block';
-    document.getElementById('auto-status-val').textContent=auto.label;
-    document.getElementById('auto-status-reason').textContent=auto.reason;
-  }
-  // Conductor dropdown — all HMs + all TAs
-  const cond=document.getElementById('st-conductor');
-  const allMembers=[...(team.HM||[]).map(m=>m.name),...(team.TA||[]).map(m=>m.name)];
-  cond.innerHTML=`<option value="">— Select person —</option>`+allMembers.map(n=>`<option value="${n}">${n}</option>`).join('');
-  openMo('moStatus');
-}
-
-// ── Auto-status from stage ──
-function stageToStatus(stage) {
-  const s = stage || '';
-  if(s.includes('scheduled'))                          return {status:'scheduled', label:'Scheduled 📅',    reason:'An interview has been set'};
-  if(s.includes('On hold') || s==='On hold')           return {status:'hold',      label:'On hold ⏸️',      reason:'Process paused — comment required'};
-  if(s.includes('Rejected') || s.includes('rejected')) return {status:'closed-rejected', label:'Closed — Rejected ❌', reason:'Candidate did not progress'};
-  if(s==='HR round completed — Selected')              return {status:'closed-selected', label:'Closed — Selected ✅', reason:'Candidate selected — process complete'};
-  if(s==='Process closed')                             return {status:'closed-selected', label:'Closed — Selected ✅', reason:'Process marked as complete'};
-  if(s==='Drop off')                                   return {status:'cancelled',  label:'Cancelled 🚫',   reason:'Candidate dropped out'};
-  if(s.includes('No show'))                            return {status:'cancelled',  label:'Cancelled 🚫',   reason:'Candidate did not attend'};
-  if(s==='Profile rejected by HM')                     return {status:'closed-rejected', label:'Closed — Rejected ❌', reason:'HM did not shortlist this profile'};
-  if(s.includes('Selected'))                           return {status:'active',     label:'Active 🟢',      reason:'Moving to next round'};
-  return {status:'active', label:'Active 🟢', reason:'Process in progress'};
-}
-
-function pickStage(el, stage) {
-  document.querySelectorAll('.stage-opt').forEach(e=>e.classList.remove('sel'));
-  el.classList.add('sel'); selStageVal=stage;
-  // Show auto-status preview
-  const auto = stageToStatus(stage);
-  const preview = document.getElementById('auto-status-preview');
-  const valEl   = document.getElementById('auto-status-val');
-  const reasonEl= document.getElementById('auto-status-reason');
-  if(preview) preview.style.display='block';
-  if(valEl)   valEl.textContent   = auto.label;
-  if(reasonEl)reasonEl.textContent= auto.reason;
-  // Show required note for hold/cancelled
-  const req = document.getElementById('cmt-req');
-  if(req) req.textContent = (auto.status==='hold'||auto.status==='cancelled'||auto.status==='closed-rejected'||auto.status==='closed-selected') ? '' : '';
-  if(req && (auto.status==='hold'||auto.status==='cancelled')) req.textContent='(comment recommended)';
-}
-
-function saveStatus() {
-  if(!selStageVal){toast('Please select a stage');return;}
-  const auto    = stageToStatus(selStageVal);
-  const comment = (document.getElementById('st-comment').value||'').trim();
-  if((auto.status==='hold')&&!comment){toast('Please add a comment for On hold');return;}
-  const c=data.find(x=>x.id===statusId); if(!c) return;
-  const conductor=(document.getElementById('st-conductor').value||'').trim()||'—';
-  const prevStage=c.stage;
-  c.stage  = selStageVal;
-  c.status = auto.status;
-  // Mark previous active timeline entry as done
-  (c.timeline||[]).forEach(t=>{if(t.state==='active')t.state='done';});
-  // Determine timeline state
-  let tlSt='active';
-  if(auto.status==='hold')                                        tlSt='hold';
-  if(auto.status==='cancelled')                                   tlSt='pend';
-  if(auto.status==='closed-selected'||auto.status==='closed-rejected') tlSt='done';
-  if(selStageVal.toLowerCase().includes('scheduled'))             tlSt='active';
-  const detail=comment||(prevStage!==selStageVal?`Stage moved to "${selStageVal}"`:selStageVal);
-  c.timeline.push({label:selStageVal, detail, date:today(), state:tlSt, conductor, updatedBy:currentUserLabel()});
-  if(comment) c.comments.push({by:currentUserLabel(), date:today(), text:comment});
-  saveAll(); closeMo('moStatus'); renderTable(); metrics();
-  toast('Updated — '+c.name+' → '+auto.label);
-}
-
-function toggleCTCSplit(prefix) {
-  const chk = document.getElementById(prefix+'-ctc-split');
-  const fields = document.getElementById(prefix+'-ctc-split-fields');
-  if(fields) fields.style.display = chk && chk.checked ? 'grid' : 'none';
-}
-function submitNew() {
-  const name=(document.getElementById('f-cname').value||'').trim();
-  const r=(document.getElementById('f-role').value||'').trim();
-  if(!name||!r){toast('Candidate name and role are required');return;}
-  const taEl=document.getElementById('f-ta');
-  const ta=taEl?taEl.value:'Unassigned';
-  const newC={
-    id:Date.now(), role:r,
-    dept:document.getElementById('f-dept').value||'—',
-    etype:document.getElementById('f-etype').value,
-    jloc:document.getElementById('f-jloc').value||'Chennai',
-    rounds:parseInt(document.getElementById('f-rounds').value)||2,
-    ta, name,
-    email:document.getElementById('f-email').value,
-    phone:document.getElementById('f-phone').value,
-    org:document.getElementById('f-org').value||'—',
-    desig:document.getElementById('f-desig').value||'—',
-    exp:parseInt(document.getElementById('f-exp').value)||0,
-    rexp:parseInt(document.getElementById('f-rexp').value)||0,
-    edu:document.getElementById('f-edu').value||'—',
-    np:document.getElementById('f-np').value||'—',
-    npNeg: document.getElementById('f-np-neg') ? document.getElementById('f-np-neg').checked : false,
-    cloc:document.getElementById('f-cloc').value||'—',
-    ploc:document.getElementById('f-ploc').value||'—',
-    curctc:(document.getElementById('f-curctc').value||'—'),
-    ctcFixed:(document.getElementById('f-ctc-split')&&document.getElementById('f-ctc-split').checked)?(document.getElementById('f-ctc-fixed').value||''):'',
-    ctcVariable:(document.getElementById('f-ctc-split')&&document.getElementById('f-ctc-split').checked)?(document.getElementById('f-ctc-variable').value||''):'',
-    expctc:(()=>{const mn=document.getElementById('f-expctc-min').value||'';const mx=document.getElementById('f-expctc-max').value||'';return mn&&mx?mn+'–'+mx:mn||mx||'—';})(),
-    expctcNeg: document.getElementById('f-expctc-neg') ? document.getElementById('f-expctc-neg').checked : false,
-    wfo:document.getElementById('f-wfo').value,
-    shift:document.getElementById('f-shift').value,
-    src:document.getElementById('f-src').value,
-    slots:document.getElementById('f-slots').value||'—',
-    stage:'Screening call completed', status:'active', hm:'Pending', days:0,
-    salVis:true, comments:[],
-    timeline:[{label:'Screening call completed', detail:'Process initiated', date:today(), state:'active', conductor:ta, updatedBy:currentUserLabel()}]
-  };
-  data.unshift(newC); saveAll();
-  ['f-role','f-dept','f-jloc','f-cname','f-email','f-phone','f-org','f-desig','f-exp','f-rexp','f-edu','f-np','f-cloc','f-ploc','f-curctc','f-ctc-fixed','f-ctc-variable','f-expctc-min','f-expctc-max','f-slots'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['f-np-neg','f-ctc-split','f-expctc-neg'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
-  const sf=document.getElementById('f-ctc-split-fields'); if(sf) sf.style.display='none';
-  closeMo('moNew'); renderTable(); metrics();
-  toast('Process created for '+name);
-}
-
-// ── Team page ──
-function renderTeam() {
-  const p=PERMS[role];
-  // TA add row — only Admin can add/remove TA
-  const taAdd=document.getElementById('ta-add-row');
-  if(taAdd) taAdd.style.display=p.manageTA?'flex':'none';
-  // HM add row — Admin and TA can add/remove HM
-  const hmAdd=document.getElementById('hm-add-row');
-  if(hmAdd) hmAdd.style.display=p.manageHM?'flex':'none';
-  // TA card opacity — only dim for TA (view only) and HM. Admin NEVER dimmed.
-  const taCard=document.getElementById('ta-card');
-  if(taCard) taCard.style.opacity = (role==='Admin') ? '1' : (!p.manageTA ? '0.55' : '1');
-  // Permission notice for TA role
-  const pb=document.getElementById('teamPermBox');
-  if(pb) pb.style.display=(role==='TA')?'block':'none';
-  // HM card — never dimmed for Admin or TA, dimmed for HM
-  const hmCard=document.getElementById('hm-card');
-  if(hmCard) hmCard.style.opacity = (role==='HM') ? '0.55' : '1';
-  renderMemberList('TA');
-  renderMemberList('HM');
-}
-
-function renderMemberList(type) {
-  const members=team[type]||[];
-  const listEl=document.getElementById(type.toLowerCase()+'-list');
-  const countEl=document.getElementById(type.toLowerCase()+'-count');
-  if(countEl) countEl.textContent=members.length+' member'+(members.length!==1?'s':'');
-  if(!listEl) return;
-  const p=PERMS[role];
-  const canManage=(type==='TA'&&p.manageTA)||(type==='HM'&&p.manageHM);
-  if(!members.length) { listEl.innerHTML=`<div class="empty-team">No ${type} members added yet</div>`; return; }
-  listEl.innerHTML=members.map((m,i)=>`
-    <div class="team-member">
-      <div class="tm-info">
-        <div class="tm-av tm-av-${type.toLowerCase()}">${initials(m.name)}</div>
-        <div>
-          <div class="tm-name">${m.name}</div>
-          <div class="tm-email">${m.email||'No email added'}</div>
-        </div>
-      </div>
-      ${canManage?`<div class="tm-acts"><button class="ib" title="Remove" onclick="removeMember('${type}',${i})"><i class="ti ti-trash" style="color:var(--err-tx)"></i></button></div>`:''}
-    </div>`).join('');
-}
-
-function addMember(type) {
-  const p=PERMS[role];
-  if(type==='TA'&&!p.manageTA){toast('Only Admin can add TA members');return;}
-  if(type==='HM'&&!p.manageHM){toast('You do not have permission to add HMs');return;}
-  const nameEl=document.getElementById(type.toLowerCase()+'-name-in');
-  const emailEl=document.getElementById(type.toLowerCase()+'-email-in');
-  const name=(nameEl?nameEl.value:'').trim();
-  if(!name){toast('Please enter a name');return;}
-  const email=(emailEl?emailEl.value:'').trim();
-  if(team[type].find(m=>m.name.toLowerCase()===name.toLowerCase())){toast(name+' already exists in the list');return;}
-  team[type].push({name,email});
-  saveAll(); renderMemberList(type);
-  if(nameEl)nameEl.value=''; if(emailEl)emailEl.value='';
-  toast(name+' added to '+type+' team');
-}
-
-function removeMember(type,idx) {
-  const p=PERMS[role];
-  if(type==='TA'&&!p.manageTA){toast('Only Admin can remove TA members');return;}
-  if(type==='HM'&&!p.manageHM){toast('You do not have permission to remove HMs');return;}
-  const name=team[type][idx].name;
-  team[type].splice(idx,1);
-  saveAll(); renderMemberList(type);
-  toast(name+' removed from '+type+' list');
-}
-
-// ── Role switcher ──
-function switchRole(r) {
-  role=r; closeMo('moRole');
-  document.querySelectorAll('.ro').forEach(el=>el.classList.remove('sel'));
-  const ro=document.getElementById('ro-'+r); if(ro) ro.classList.add('sel');
-  document.getElementById('roleLabel').textContent=r==='HM'?'Hiring Manager':r;
-  const u=ROLE_USERS[r];
-  document.getElementById('sbAv').textContent=u.init;
-  document.getElementById('sbName').textContent=u.name;
-  document.getElementById('sbRole').textContent=u.label;
-  document.getElementById('newBtn').style.display=PERMS[r].create?'inline-flex':'none';
-  renderTable();
-  // Re-render team page if open
-  if(document.getElementById('page-team').classList.contains('active')) renderTeam();
-  toast('Now viewing as '+u.label);
-}
-
-// ── Filter ──
-function setFilter(el,f) {
-  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active'); filter=f; renderTable();
-}
-
-// ── Modals ──
-function openMo(id) {
-  // Populate TA dropdown before opening new process modal
-  if(id==='moNew') populateDropdown('f-ta','TA','');
-  document.getElementById(id).classList.add('open');
-}
-function closeMo(id) { document.getElementById(id).classList.remove('open'); }
-
-// ── Toast ──
-function toast(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
-}
-
-// ── Init ──
-window.addEventListener('DOMContentLoaded',function(){
-  loadAll();
-  metrics();
-  renderTable();
-});
-</script>
-</body>
-</html>
+-- ================================================
+-- DONE
+-- ================================================
