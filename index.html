@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -552,6 +553,7 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
         <div id="auto-status-val" style="font-size:13px;font-weight:600"></div>
         <div id="auto-status-reason" style="font-size:11px;color:var(--txm);margin-top:2px"></div>
       </div>
+
       <!-- HM assignment — only shown when stage is a scheduled stage -->
       <div id="st-hm-row" style="display:none;margin-bottom:14px">
         <div class="fgroup">
@@ -560,8 +562,47 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
           <div style="font-size:11px;color:var(--txm);margin-top:4px">This HM will be linked to the round and appear in the TEF</div>
         </div>
       </div>
+
+      <!-- Scheduling details — only shown when stage is a scheduled stage -->
+      <div id="st-schedule-row" style="display:none;margin-bottom:14px;padding:14px;background:var(--acc-bg);border-radius:var(--r);border:1px solid var(--acc-bd)">
+        <div style="font-size:12px;font-weight:600;color:var(--acc-tx);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <i class="ti ti-mail"></i> Interview details — email will be sent to candidate &amp; HM
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="fgroup">
+            <label class="flbl">Interview date <span style="color:var(--err-tx)">*</span></label>
+            <input class="fi" type="date" id="st-int-date">
+          </div>
+          <div class="fgroup">
+            <label class="flbl">Interview time <span style="color:var(--err-tx)">*</span></label>
+            <input class="fi" type="time" id="st-int-time">
+          </div>
+        </div>
+        <div class="fgroup" style="margin-bottom:10px">
+          <label class="flbl">Mode of interview <span style="color:var(--err-tx)">*</span></label>
+          <select class="fi" id="st-int-mode" onchange="toggleTeamsField()">
+            <option value="Virtual Interview">Virtual Interview</option>
+            <option value="In-person Interview">In-person Interview</option>
+          </select>
+        </div>
+        <div class="fgroup" id="st-teams-row" style="margin-bottom:10px">
+          <label class="flbl">Microsoft Teams link <span style="color:var(--err-tx)">*</span></label>
+          <input class="fi" id="st-teams-link" placeholder="https://teams.microsoft.com/meet/...">
+          <div style="font-size:11px;color:var(--txm);margin-top:3px">Copy from your Teams calendar invite</div>
+        </div>
+        <div class="fgroup" id="st-venue-row" style="display:none;margin-bottom:10px">
+          <label class="flbl">Venue / address</label>
+          <input class="fi" id="st-venue" placeholder="e.g. ESDS Office, Nashik">
+        </div>
+        <div class="fgroup">
+          <label class="flbl">HM email address <span style="color:var(--err-tx)">*</span></label>
+          <input class="fi" type="email" id="st-hm-email" placeholder="hm@company.com">
+          <div style="font-size:11px;color:var(--txm);margin-top:3px">Email will also be sent to this address</div>
+        </div>
+      </div>
+
       <div class="fgroup" style="margin-bottom:14px">
-        <label class="flbl" style="margin-bottom:8px" id="st-conductor-lbl">2. Who conducted this step</label>
+        <label class="flbl" id="st-conductor-lbl">2. Who conducted this step</label>
         <select class="fi" id="st-conductor"></select>
       </div>
       <div class="fgroup">
@@ -569,7 +610,10 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
         <textarea class="fi" id="st-comment" style="margin-top:5px" placeholder="Add details about this update…"></textarea>
       </div>
     </div>
-    <div class="mft"><button class="btn" onclick="closeMo('moStatus')">Cancel</button><button class="btn btn-p" onclick="saveStatus()"><i class="ti ti-device-floppy"></i> Save update</button></div>
+    <div class="mft">
+      <button class="btn" onclick="closeMo('moStatus')">Cancel</button>
+      <button class="btn btn-p" onclick="saveStatus()"><i class="ti ti-device-floppy"></i> Save &amp; send emails</button>
+    </div>
   </div>
 </div>
 
@@ -627,7 +671,12 @@ function initSupabase() {
   }
 }
 
-// ── PERMISSION MATRIX ──
+// ── EMAILJS CONFIG ──
+const EJS_PUBLIC_KEY      = 'dy0cMErbrQlYKYluj';
+const EJS_SERVICE_ID      = 'service_0dipzed';
+const EJS_TEMPLATE_CAND   = 'template_oly3gwl';
+const EJS_TEMPLATE_HM     = 'template_5zfyzwi';
+const TA_EMAIL            = 'premdakshin@gmail.com';
 const PERMS = {
   admin:     { create:true,  edit:true,  status:true,  salary:true,  comment:true, manageTA:true,  manageHM:true  },
   ta:        { create:true,  edit:true,  status:true,  salary:true,  comment:true, manageTA:false, manageHM:true  },
@@ -678,6 +727,84 @@ function dotCls(stage,status){
 }
 function icClass(s){ return {done:'ic-done',active:'ic-active',hold:'ic-hold',pend:'ic-pend'}[s]||'ic-pend'; }
 function icIcon(s){ return {done:'check',active:'loader-2',hold:'pause',pend:'circle'}[s]||'circle'; }
+
+// ── EMAIL HELPERS ──
+function toggleTeamsField() {
+  const mode = document.getElementById('st-int-mode')?.value;
+  const teamsRow = document.getElementById('st-teams-row');
+  const venueRow = document.getElementById('st-venue-row');
+  if(teamsRow) teamsRow.style.display = mode==='Virtual Interview' ? 'block' : 'none';
+  if(venueRow) venueRow.style.display = mode==='In-person Interview' ? 'block' : 'none';
+}
+function formatDateForEmail(dateStr) {
+  if(!dateStr) return '—';
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function formatTimeForEmail(timeStr) {
+  if(!timeStr) return '—';
+  const [h,m] = timeStr.split(':');
+  const hr = parseInt(h);
+  return `${hr>12?hr-12:hr||12}:${m} ${hr>=12?'PM':'AM'}`;
+}
+async function sendSchedulingEmails(proc, roundName, intDate, intTime, intMode, teamsLink, venue, hmEmail, hmName) {
+  if(!EJS_PUBLIC_KEY || EJS_PUBLIC_KEY==='YOUR_EMAILJS_PUBLIC_KEY') {
+    toast('⚠️ EmailJS not configured yet — emails skipped');
+    return;
+  }
+  const c = proc.candidates||{};
+  const taName = currentProfile.full_name||'TA';
+  const formattedDate = formatDateForEmail(intDate);
+  const formattedTime = formatTimeForEmail(intTime);
+  // Candidate email
+  if(c.email) {
+    try {
+      await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_CAND, {
+        to_email: c.email,
+        to_name:  (c.name||'').split(' ')[0],
+        role: proc.role||'—',
+        round_name: roundName,
+        int_date: formattedDate,
+        int_time: formattedTime,
+        int_mode: intMode,
+        teams_link: teamsLink||'—',
+        venue: venue||'—',
+        ta_name: taName,
+        ta_email: TA_EMAIL,
+        reply_to: TA_EMAIL
+      }, EJS_PUBLIC_KEY);
+      toast('✅ Email sent to '+c.name);
+    } catch(e){ toast('❌ Candidate email failed: '+(e.text||e.message)); }
+  } else { toast('⚠️ No candidate email on file'); }
+  // HM email
+  if(hmEmail) {
+    try {
+      await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_HM, {
+        to_email: hmEmail,
+        to_name: hmName,
+        candidate_name: c.name||'—',
+        candidate_org: c.org||'—',
+        candidate_exp: `${c.exp||0} yrs total / ${c.rexp||0} yrs relevant`,
+        candidate_desig: c.desig||'—',
+        candidate_np: c.np||(c.np_neg?'Negotiable':'—'),
+        candidate_curctc: c.curctc?c.curctc+' LPA':'—',
+        candidate_expctc: (c.expctc_min&&c.expctc_max)?c.expctc_min+'–'+c.expctc_max+' LPA':'—',
+        role: proc.role||'—',
+        dept: proc.dept||'—',
+        round_name: roundName,
+        int_date: formattedDate,
+        int_time: formattedTime,
+        int_mode: intMode,
+        teams_link: teamsLink||'—',
+        venue: venue||'—',
+        ta_name: taName,
+        ta_email: TA_EMAIL,
+        reply_to: TA_EMAIL
+      }, EJS_PUBLIC_KEY);
+      toast('✅ HM email sent to '+hmName);
+    } catch(e){ toast('❌ HM email failed: '+(e.text||e.message)); }
+  } else { toast('⚠️ No HM email entered — HM email skipped'); }
+}
 
 function stageToStatus(stage){
   const s=stage||'';
@@ -1129,11 +1256,12 @@ function pickStage(el,stage){
   document.querySelectorAll('.stage-opt').forEach(e=>e.classList.remove('sel'));
   el.classList.add('sel'); selStageVal=stage;
   showAutoPreview(stage);
-  // Show/hide HM assignment row for scheduled stages
   const isScheduled=stage.toLowerCase().includes('scheduled');
   const hmRow=document.getElementById('st-hm-row');
+  const schedRow=document.getElementById('st-schedule-row');
   const lbl=document.getElementById('st-conductor-lbl');
   if(hmRow) hmRow.style.display=isScheduled?'block':'none';
+  if(schedRow) schedRow.style.display=isScheduled?'block':'none';
   if(lbl) lbl.textContent=isScheduled?'3. Who conducted this step':'2. Who conducted this step';
 }
 
@@ -1154,6 +1282,20 @@ async function saveStatus(){
   const isScheduled=selStageVal.toLowerCase().includes('scheduled');
   const assignedHM=(document.getElementById('st-hm-assign')?.value||'').trim();
   if(isScheduled && !assignedHM){toast('Please assign an HM for this round');return;}
+  // Validate scheduling fields
+  let intDate='', intTime='', intMode='', teamsLink='', venue='', hmEmail='';
+  if(isScheduled){
+    intDate   = (document.getElementById('st-int-date')?.value||'').trim();
+    intTime   = (document.getElementById('st-int-time')?.value||'').trim();
+    intMode   = document.getElementById('st-int-mode')?.value||'Virtual Interview';
+    teamsLink = (document.getElementById('st-teams-link')?.value||'').trim();
+    venue     = (document.getElementById('st-venue')?.value||'').trim();
+    hmEmail   = (document.getElementById('st-hm-email')?.value||'').trim();
+    if(!intDate) {toast('Please enter the interview date');return;}
+    if(!intTime) {toast('Please enter the interview time');return;}
+    if(intMode==='Virtual Interview' && !teamsLink) {toast('Please enter the Teams meeting link');return;}
+    if(!hmEmail) {toast('Please enter the HM email address');return;}
+  }
   if(auto.status==='hold'&&!comment){toast('Comment is required for On hold');return;}
   if(auto.status==='cancelled'&&!comment){toast('Comment is required for Cancelled');return;}
   const proc=processes.find(p=>p.id===statusId); if(!proc) return;
@@ -1167,15 +1309,13 @@ async function saveStatus(){
   if(isScheduled) tlSt='active';
 
   // Save HM round assignment if this is a scheduled stage
+  let roundName='';
   if(isScheduled && assignedHM){
-    // Extract round name from stage e.g. "L1 scheduled" → "L1", "HR round scheduled" → "HR"
-    let roundName=selStageVal.replace(' scheduled','').replace(' round','').trim();
-    // Check if round already exists, upsert
-    const {data:existingRound}=await sb.from('process_rounds').select('id').eq('process_id',statusId).eq('round_name',roundName).single();
+    roundName=selStageVal.replace(' scheduled','').replace(' round','').trim();
+    const {data:existingRound}=await sb.from('process_rounds').select('id').eq('process_id',statusId).eq('round_name',roundName).maybeSingle();
     if(existingRound){
       await sb.from('process_rounds').update({hm_name:assignedHM,scheduled_at:new Date().toISOString()}).eq('id',existingRound.id);
     } else {
-      // Count existing rounds to get round number
       const {data:rounds}=await sb.from('process_rounds').select('id').eq('process_id',statusId);
       await sb.from('process_rounds').insert({
         process_id:statusId, round_number:(rounds?.length||0)+1,
@@ -1183,16 +1323,21 @@ async function saveStatus(){
         scheduled_at:new Date().toISOString(), outcome:'pending'
       });
     }
-    // Update process current_hm_name to latest assigned HM
     await sb.from('processes').update({current_hm_name:assignedHM}).eq('id',statusId);
   }
 
   // Mark previous active timeline entries as done
   await sb.from('timeline_events').update({state:'done'}).eq('process_id',statusId).eq('state','active');
 
-  // Insert new timeline event
-  const hmNote = isScheduled&&assignedHM ? ` | HM: ${assignedHM}` : '';
-  const detail=comment||(isScheduled?`${selStageVal}${hmNote}`:`Stage updated to "${selStageVal}"`);
+  // Build timeline detail
+  let detail = comment||'';
+  if(!detail && isScheduled) {
+    const dateStr = intDate ? formatDateForEmail(intDate) : '';
+    const timeStr = intTime ? formatTimeForEmail(intTime) : '';
+    detail = `${selStageVal} | HM: ${assignedHM} | ${dateStr} at ${timeStr} | ${intMode}`;
+  }
+  if(!detail) detail = `Stage updated to "${selStageVal}"`;
+
   await sb.from('timeline_events').insert({
     process_id:statusId, label:selStageVal, detail,
     conductor_name:isScheduled?assignedHM:conductor,
@@ -1215,7 +1360,16 @@ async function saveStatus(){
 
   closeMo('moStatus');
   await loadProcesses();
-  toast('Updated — '+auto.label+(isScheduled&&assignedHM?' · HM: '+assignedHM:''));
+  toast('Status updated — '+auto.label);
+
+  // Send emails if scheduling
+  if(isScheduled){
+    // Reload proc fresh for candidate data
+    const freshProc = processes.find(p=>p.id===statusId);
+    if(freshProc) {
+      await sendSchedulingEmails(freshProc, roundName||selStageVal, intDate, intTime, intMode, teamsLink, venue, hmEmail, assignedHM);
+    }
+  }
 }
 
 // ── NEW PROCESS ──
@@ -1766,6 +1920,11 @@ window.addEventListener('DOMContentLoaded',async()=>{
   if(!ready) {
     showLoginErr('Could not connect to the server. Please refresh the page or check your internet connection.');
     return;
+  }
+
+  // Initialise EmailJS
+  if(typeof emailjs !== 'undefined') {
+    emailjs.init({ publicKey: EJS_PUBLIC_KEY });
   }
 
   // Restore session if present
