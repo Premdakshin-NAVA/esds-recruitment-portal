@@ -758,51 +758,63 @@ async function sendSchedulingEmails(proc, roundName, intDate, intTime, intMode, 
   const formattedTime = formatTimeForEmail(intTime);
   // Candidate email
   if(c.email) {
+    const candParams = {
+      to_email: c.email,
+      to_name:  (c.name||'').split(' ')[0],
+      role: proc.role||'—',
+      round_name: roundName,
+      int_date: formattedDate,
+      int_time: formattedTime,
+      int_mode: intMode,
+      teams_link: teamsLink||'—',
+      venue: venue||'—',
+      ta_name: taName,
+      ta_email: TA_EMAIL,
+      reply_to: TA_EMAIL
+    };
+    console.log('Sending candidate email to:', c.email, candParams);
     try {
-      await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_CAND, {
-        to_email: c.email,
-        to_name:  (c.name||'').split(' ')[0],
-        role: proc.role||'—',
-        round_name: roundName,
-        int_date: formattedDate,
-        int_time: formattedTime,
-        int_mode: intMode,
-        teams_link: teamsLink||'—',
-        venue: venue||'—',
-        ta_name: taName,
-        ta_email: TA_EMAIL,
-        reply_to: TA_EMAIL
-      }, EJS_PUBLIC_KEY);
+      const res = await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_CAND, candParams);
+      console.log('Candidate email result:', res);
       toast('✅ Email sent to '+c.name);
-    } catch(e){ toast('❌ Candidate email failed: '+(e.text||e.message)); }
+    } catch(e){
+      console.error('Candidate email error:', e);
+      toast('❌ Candidate email failed: '+(e.text||e.message||JSON.stringify(e)));
+    }
   } else { toast('⚠️ No candidate email on file'); }
   // HM email
   if(hmEmail) {
+    const hmParams = {
+      to_email: hmEmail,
+      to_name: hmName,
+      candidate_name: c.name||'—',
+      candidate_org: c.org||'—',
+      candidate_exp: `${c.exp||0} yrs total / ${c.rexp||0} yrs relevant`,
+      candidate_desig: c.desig||'—',
+      candidate_np: c.np||(c.np_neg?'Negotiable':'—'),
+      candidate_curctc: c.curctc?c.curctc+' LPA':'—',
+      candidate_expctc: (c.expctc_min&&c.expctc_max)?c.expctc_min+'–'+c.expctc_max+' LPA':'—',
+      role: proc.role||'—',
+      dept: proc.dept||'—',
+      round_name: roundName,
+      int_date: formattedDate,
+      int_time: formattedTime,
+      int_mode: intMode,
+      teams_link: teamsLink||'—',
+      venue: venue||'—',
+      ta_name: taName,
+      ta_email: TA_EMAIL,
+      reply_to: TA_EMAIL
+    };
+    console.log('Sending HM email to:', hmEmail, hmParams);
     try {
-      await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_HM, {
-        to_email: hmEmail,
-        to_name: hmName,
-        candidate_name: c.name||'—',
-        candidate_org: c.org||'—',
-        candidate_exp: `${c.exp||0} yrs total / ${c.rexp||0} yrs relevant`,
-        candidate_desig: c.desig||'—',
-        candidate_np: c.np||(c.np_neg?'Negotiable':'—'),
-        candidate_curctc: c.curctc?c.curctc+' LPA':'—',
-        candidate_expctc: (c.expctc_min&&c.expctc_max)?c.expctc_min+'–'+c.expctc_max+' LPA':'—',
-        role: proc.role||'—',
-        dept: proc.dept||'—',
-        round_name: roundName,
-        int_date: formattedDate,
-        int_time: formattedTime,
-        int_mode: intMode,
-        teams_link: teamsLink||'—',
-        venue: venue||'—',
-        ta_name: taName,
-        ta_email: TA_EMAIL,
-        reply_to: TA_EMAIL
-      }, EJS_PUBLIC_KEY);
+      const res = await emailjs.send(EJS_SERVICE_ID, EJS_TEMPLATE_HM, hmParams);
+      console.log('HM email result:', res);
       toast('✅ HM email sent to '+hmName);
-    } catch(e){ toast('❌ HM email failed: '+(e.text||e.message)); }
+    } catch(e){
+      console.error('HM email error:', e);
+      toast('❌ HM email failed: '+(e.text||e.message||JSON.stringify(e)));
+    }
   } else { toast('⚠️ No HM email entered — HM email skipped'); }
 }
 
@@ -1243,9 +1255,11 @@ function openStatus(id){
   const hmOnly=(teamMembers.HM||[]).map(m=>m.full_name);
   document.getElementById('st-conductor').innerHTML=`<option value="">— Select person —</option>`+all.map(n=>`<option>${n}</option>`).join('');
   document.getElementById('st-hm-assign').innerHTML=`<option value="">— Select HM for this round —</option>`+hmOnly.map(n=>`<option>${n}</option>`).join('');
-  // Show HM row if current stage is already scheduled
+  // Show HM row and schedule row if current stage is already scheduled
   if(selStageVal&&selStageVal.toLowerCase().includes('scheduled')){
     if(hmRow) hmRow.style.display='block';
+    const schedRow=document.getElementById('st-schedule-row');
+    if(schedRow) schedRow.style.display='block';
     const lbl=document.getElementById('st-conductor-lbl');
     if(lbl) lbl.textContent='3. Who conducted this step';
   }
