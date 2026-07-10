@@ -1286,13 +1286,14 @@ function pendingSal(id,val){
 }
 async function saveSal(id){
   if(pendingSalVal===null){toast('No change to save');return;}
-  const {error}=await sb.from('processes').update({sal_visible:pendingSalVal}).eq('id',id);
+  const newVal=pendingSalVal;
+  const {error}=await sb.from('processes').update({sal_visible:newVal}).eq('id',id);
   if(error){toast('Error: '+error.message);return;}
   const proc=processes.find(p=>p.id===id);
-  if(proc) proc.sal_visible=pendingSalVal;
+  if(proc) proc.sal_visible=newVal;
   pendingSalId=null; pendingSalVal=null;
   renderTable(); openDP(id);
-  toast(pendingSalVal?'Salary now visible to HM':'Salary hidden from HM');
+  toast(newVal?'Salary now visible to HM':'Salary hidden from HM');
 }
 
 // Comment
@@ -1324,7 +1325,7 @@ async function openEdit(id){
   const er=document.getElementById('e-rounds'); if(er) er.value=proc.rounds||2;
   const enpNeg=document.getElementById('e-np-neg'); if(enpNeg) enpNeg.checked=!!c.np_neg;
   const eexpNeg=document.getElementById('e-expctc-neg'); if(eexpNeg) eexpNeg.checked=!!cc.expctc_neg;
-  populateDropdown('e-ta','TA',null);
+  populateDropdown('e-ta','TA',proc.assigned_ta);
   populateDropdown('e-hm','HM',proc.current_hm_name);
   openMo('moEdit');
 }
@@ -1547,7 +1548,8 @@ async function submitNew(){
     wfo:document.getElementById('f-wfo').value,
     shift:document.getElementById('f-shift').value,
     src:document.getElementById('f-src').value,
-    slots:document.getElementById('f-slots').value||null
+    slots:document.getElementById('f-slots').value||null,
+    created_by:currentProfile.full_name
   }).select().single();
   if(ce){toast('Error creating candidate: '+ce.message);return;}
 
@@ -1571,6 +1573,7 @@ async function submitNew(){
     jloc:document.getElementById('f-jloc').value||null,
     rounds:parseInt(document.getElementById('f-rounds').value)||2,
     assigned_ta: taName||null,
+    created_by:currentProfile.full_name,
     stage:'Screening call completed',
     status:'active',
     sal_visible:true,
@@ -1644,6 +1647,11 @@ async function renderAdmins(){
   document.getElementById('admins-list').innerHTML=html||'<div class="empty-team">No users yet</div>';
 }
 async function changeUserRole(id,role){
+  // Guard: don't let an admin lock themselves out by demoting their own account
+  if(id===currentProfile.id && role!=='admin' && role!=='developer'){
+    toast("You can't demote your own account — ask another admin");
+    renderAdmins(); return;
+  }
   const {error}=await sb.from('profiles').update({role}).eq('id',id);
   if(error){toast('Error: '+error.message); renderAdmins(); return;}
   if(id===currentProfile.id) currentProfile.role=role;
@@ -1719,8 +1727,13 @@ async function removeMember(id,type){
 function populateDropdown(selId,type,currentVal){
   const sel=document.getElementById(selId); if(!sel) return;
   const members=teamMembers[type]||[];
-  sel.innerHTML=members.map(m=>`<option value="${esc(m.full_name)}" ${m.full_name===currentVal?'selected':''}>${esc(m.full_name)}</option>`).join('');
-  if(!members.length) sel.innerHTML=`<option value="">No ${type} added yet — go to Team page</option>`;
+  let html=members.map(m=>`<option value="${esc(m.full_name)}" ${m.full_name===currentVal?'selected':''}>${esc(m.full_name)}</option>`).join('');
+  // Keep the current assignment selected even if that person was removed from the team list
+  if(currentVal && !members.some(m=>m.full_name===currentVal)){
+    html=`<option value="${esc(currentVal)}" selected>${esc(currentVal)}</option>`+html;
+  }
+  sel.innerHTML=html;
+  if(!members.length&&!currentVal) sel.innerHTML=`<option value="">No ${type} added yet — go to Team page</option>`;
 }
 
 // ── NAV ──
@@ -1900,8 +1913,11 @@ async function openTEF(procId) {
 
   const html = buildTEFHTML(proc, c, processRounds, interviewerRatings, p);
   document.getElementById('tef-panel-meta').textContent = (c.name||'—') + ' · ' + (proc.role||'—');
+  // Render into the panel ONLY. The full page never gets its own copy —
+  // expandTEF() moves the live nodes instead, so element ids stay unique
+  // and unsaved edits survive expanding/collapsing.
+  document.getElementById('tefFullContent').innerHTML = '';
   document.getElementById('tefPanelContent').innerHTML = html;
-  document.getElementById('tefFullContent').innerHTML = html;
   document.getElementById('tefPanel').style.display = 'flex';
   // Calculate totals from loaded ratings (for both editable selects and view-only display)
   setTimeout(()=>calculateTEFTotals(processRounds, interviewerRatings), 50);
@@ -2223,8 +2239,6 @@ async function saveTEF() {
     if(error){ toast('Error saving TEF: '+error.message); return; }
   }
 
-  // Sync full page content if open
-  document.getElementById('tefFullContent').innerHTML = document.getElementById('tefPanelContent').innerHTML;
   toast('TEF saved successfully ✓');
 }
 
@@ -2232,13 +2246,22 @@ function closeTEFPanel() {
   document.getElementById('tefPanel').style.display = 'none';
 }
 
+// Move the live form nodes between panel and full page (never copy —
+// copies duplicate ids and drop unsaved edits).
+function moveTEFNodes(fromId, toId) {
+  const from=document.getElementById(fromId), to=document.getElementById(toId);
+  while(from.firstChild) to.appendChild(from.firstChild);
+}
+
 function closeTEFPage() {
+  moveTEFNodes('tefFullContent','tefPanelContent');
   document.getElementById('tefPage').style.display = 'none';
+  document.getElementById('tefPanel').style.display = 'flex';
 }
 
 function expandTEF() {
-  // Sync content to full page
-  document.getElementById('tefFullContent').innerHTML = document.getElementById('tefPanelContent').innerHTML;
+  moveTEFNodes('tefPanelContent','tefFullContent');
+  document.getElementById('tefPanel').style.display = 'none';
   document.getElementById('tefPage').style.display = 'block';
 }
 

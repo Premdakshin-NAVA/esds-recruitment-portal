@@ -23,6 +23,22 @@ an admin/developer can pre-authorize a role by email (the "Add admins" panel on
 the Team page). `initApp()` consults it on first login. A signing-in user can
 read only their own row; admins/developers manage all rows.
 
+## 005 — `qa_hardening.sql` — ✅ APPLIED
+QA fixes: BEFORE INSERT trigger on `profiles` pins a new user's email to their
+JWT and forces their role to the `role_provisioning` value (default `hm`) —
+closes the first-login role self-assignment hole. `prevent_role_change()` now
+also blocks display-name changes by non-admins (protects `tef_ratings.hm_name`
+linkage).
+
+### Known by-design behaviors (documented QA findings)
+- Developer "view as HM/TA" is a UI preview only; RLS still uses the real
+  `developer` role.
+- A candidate with multiple processes: salary is visible to an HM if ANY of
+  that candidate's processes has `sal_visible = true` (RLS cannot know which
+  process a viewer is looking at).
+- Ops (dashboard toggles, not SQL): enable Auth leaked-password protection and
+  keep public sign-ups disabled.
+
 ## 004 — `add_feedback.sql` — ✅ APPLIED
 Additive and non-breaking. `feedback` table for the in-app Feedback button:
 any authenticated user can insert; admin/developer can read (shown in Settings)
