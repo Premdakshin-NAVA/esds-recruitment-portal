@@ -130,7 +130,11 @@ drop policy if exists "own profile insert" on public.profiles;
 drop policy if exists "own profile update" on public.profiles;
 create policy "profiles_select" on public.profiles for select using ((select auth.role())='authenticated');
 create policy "profiles_insert" on public.profiles for insert with check ((select auth.uid()) = id);
-create policy "profiles_update" on public.profiles for update using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
+-- Own profile, OR an admin/developer editing anyone (needed by the role-management UI).
+-- The prevent_role_change() trigger still blocks non-admins from changing any role.
+create policy "profiles_update" on public.profiles for update
+  using ((select auth.uid()) = id or (select public.app_role()) in ('admin','developer'))
+  with check ((select auth.uid()) = id or (select public.app_role()) in ('admin','developer'));
 
 -- 4) Block self role escalation: only admins/developers may change a role.
 create or replace function public.prevent_role_change()

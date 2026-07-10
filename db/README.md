@@ -17,6 +17,12 @@ Additive and non-breaking. Adds:
 The live (old) frontend does not reference `candidate_comp`, so applying 001
 had no effect on the running app.
 
+## 003 — `add_role_provisioning.sql` — ✅ APPLIED
+Additive and non-breaking. Adds `role_provisioning(email, role, full_name)` so
+an admin/developer can pre-authorize a role by email (the "Add admins" panel on
+the Team page). `initApp()` consults it on first login. A signing-in user can
+read only their own row; admins/developers manage all rows.
+
 ## 002 — `cutover_role_rls_and_drop_salary.sql` — ⏳ PENDING (BREAKING)
 Apply **only in the same window** as merging the new `index.html` to `main`,
 because it changes the data model and access rules the frontend depends on:

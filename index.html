@@ -438,6 +438,26 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
             </div>
           </div>
         </div>
+
+        <!-- Portal admins & roles (admin / developer only) -->
+        <div class="team-card" id="admins-card" style="display:none;margin-top:20px">
+          <div class="team-card-hd">
+            <div class="team-card-title"><i class="ti ti-shield-lock" style="color:var(--acc-tx)"></i> Portal access &amp; roles</div>
+            <span style="font-size:12px;color:var(--txm)">Admin / Developer only</span>
+          </div>
+          <div class="team-list" id="admins-list"></div>
+          <div class="add-member-row" id="admin-add-row">
+            <input class="fi" id="admin-name-in" placeholder="Full name" style="flex:1">
+            <input class="fi" id="admin-email-in" placeholder="Email" type="email" style="flex:1.5">
+            <select class="fi" id="admin-role-in" style="width:auto">
+              <option value="admin">Admin</option>
+              <option value="developer">Developer</option>
+              <option value="ta">TA</option>
+              <option value="hm">HM</option>
+            </select>
+            <button class="btn btn-p btn-sm" onclick="addAdmin()"><i class="ti ti-plus"></i> Add</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -925,9 +945,14 @@ async function initApp(user){
   // Load profile
   const {data:prof}=await sb.from('profiles').select('*').eq('id',user.id).single();
   if(!prof){
-    // Auto-create profile if missing (first login)
-    const role = getUserRole(user.id);
-    const name = getUserName(user.id);
+    // First login — auto-create profile. Prefer a pre-authorized role from
+    // role_provisioning (set by an admin), else fall back to the legacy map.
+    let role = getUserRole(user.id);
+    let name = getUserName(user.id);
+    try {
+      const {data:prov}=await sb.from('role_provisioning').select('*').eq('email',user.email).maybeSingle();
+      if(prov){ role=prov.role||role; name=prov.full_name||name; }
+    } catch(e){ /* provisioning table may not exist yet — ignore */ }
     await sb.from('profiles').insert({id:user.id,full_name:name,email:user.email,role});
     currentProfile={id:user.id,full_name:name,email:user.email,role};
   } else {
@@ -1521,6 +1546,75 @@ async function renderTeam(){
   document.getElementById('hm-card').style.opacity=activeRole==='hm'?'0.55':'1';
   document.getElementById('teamPermBox').style.display=activeRole==='ta'?'block':'none';
   renderMemberList('TA'); renderMemberList('HM');
+  renderAdmins();
+}
+
+// ── PORTAL ADMINS / ROLES (admin & developer only) ──
+let allProfiles=[];
+const APP_ROLES=['admin','developer','ta','hm'];
+async function renderAdmins(){
+  const card=document.getElementById('admins-card');
+  if(!card) return;
+  const isAdminDev = activeRole==='admin'||activeRole==='developer';
+  card.style.display = isAdminDev ? 'block' : 'none';
+  if(!isAdminDev) return;
+  const {data:profs}=await sb.from('profiles').select('*').order('created_at');
+  allProfiles=profs||[];
+  let prov=[];
+  try { const r=await sb.from('role_provisioning').select('*').order('created_at'); prov=r.data||[]; } catch(e){ prov=[]; }
+  const roleOpts=cur=>APP_ROLES.map(r=>`<option value="${r}" ${r===cur?'selected':''}>${r.toUpperCase()}</option>`).join('');
+  let html=allProfiles.map(pr=>`
+    <div class="team-member">
+      <div class="tm-info">
+        <div class="tm-av tm-av-ta">${initials(pr.full_name)}</div>
+        <div><div class="tm-name">${esc(pr.full_name)}</div><div class="tm-email">${esc(pr.email)}</div></div>
+      </div>
+      <select class="fi" style="width:auto" onchange="changeUserRole('${pr.id}',this.value)">${roleOpts(pr.role)}</select>
+    </div>`).join('');
+  const signed=new Set(allProfiles.map(p=>(p.email||'').toLowerCase()));
+  const pending=(prov||[]).filter(x=>!signed.has((x.email||'').toLowerCase()));
+  if(pending.length){
+    html+=`<div style="padding:10px 16px 4px;font-size:10px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.06em">Invited — role applies on first sign-in</div>`;
+    html+=pending.map(x=>`
+      <div class="team-member">
+        <div class="tm-info">
+          <div class="tm-av tm-av-hm">${initials(x.full_name||x.email)}</div>
+          <div><div class="tm-name">${esc(x.full_name)||'—'}</div><div class="tm-email">${esc(x.email)} · will be ${esc((x.role||'').toUpperCase())}</div></div>
+        </div>
+        <button class="ib" title="Cancel invite" onclick="removeProvision('${esc(x.email)}')"><i class="ti ti-trash" style="color:var(--err-tx)"></i></button>
+      </div>`).join('');
+  }
+  document.getElementById('admins-list').innerHTML=html||'<div class="empty-team">No users yet</div>';
+}
+async function changeUserRole(id,role){
+  const {error}=await sb.from('profiles').update({role}).eq('id',id);
+  if(error){toast('Error: '+error.message); renderAdmins(); return;}
+  if(id===currentProfile.id) currentProfile.role=role;
+  toast('Role updated to '+role.toUpperCase());
+}
+async function addAdmin(){
+  const email=(document.getElementById('admin-email-in')?.value||'').trim().toLowerCase();
+  const name=(document.getElementById('admin-name-in')?.value||'').trim();
+  const role=document.getElementById('admin-role-in')?.value||'admin';
+  if(!email){toast('Please enter an email');return;}
+  const existing=allProfiles.find(p=>(p.email||'').toLowerCase()===email);
+  if(existing){
+    const {error}=await sb.from('profiles').update({role}).eq('id',existing.id);
+    if(error){toast('Error: '+error.message);return;}
+    toast((existing.full_name||email)+' is now '+role.toUpperCase());
+  } else {
+    const {error}=await sb.from('role_provisioning').upsert({email,role,full_name:name||null},{onConflict:'email'});
+    if(error){toast('Error: '+error.message);return;}
+    toast('Invited '+email+' as '+role.toUpperCase()+' — applies on first sign-in');
+  }
+  const e=document.getElementById('admin-email-in'), n=document.getElementById('admin-name-in');
+  if(e) e.value=''; if(n) n.value='';
+  renderAdmins();
+}
+async function removeProvision(email){
+  const {error}=await sb.from('role_provisioning').delete().eq('email',email);
+  if(error){toast('Error: '+error.message);return;}
+  renderAdmins();
 }
 
 function renderMemberList(type){
