@@ -751,6 +751,9 @@ function esc(v){
   return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function initials(n){ return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+// Normalize the candidate_comp embed (object | array | absent). Falls back to the
+// candidate row itself so this is safe both before and after the salary columns move.
+function compOf(c){ if(!c) return {}; let cc=c.candidate_comp; if(Array.isArray(cc)) cc=cc[0]; return cc||c; }
 function today(){ return new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
 function perm(){ return PERMS[activeRole] || PERMS.hm; }
 
@@ -834,8 +837,8 @@ async function sendSchedulingEmails(proc, roundName, intDate, intTime, intMode, 
       candidate_exp: `${c.exp||0} yrs total / ${c.rexp||0} yrs relevant`,
       candidate_desig: c.desig||'—',
       candidate_np: c.np||(c.np_neg?'Negotiable':'—'),
-      candidate_curctc: c.curctc?c.curctc+' LPA':'—',
-      candidate_expctc: (c.expctc_min&&c.expctc_max)?c.expctc_min+'–'+c.expctc_max+' LPA':'—',
+      candidate_curctc: compOf(c).curctc?compOf(c).curctc+' LPA':'—',
+      candidate_expctc: (compOf(c).expctc_min&&compOf(c).expctc_max)?compOf(c).expctc_min+'–'+compOf(c).expctc_max+' LPA':'—',
       role: proc.role||'—',
       dept: proc.dept||'—',
       round_name: roundName,
@@ -993,7 +996,7 @@ async function loadProcesses(){
   document.getElementById('tbody').innerHTML=`<tr class="loading-row"><td colspan="8"><div class="spinner"></div><br>Loading processes…</td></tr>`;
   const {data,error}=await sb.from('processes').select(`
     *,
-    candidates(*),
+    candidates(*, candidate_comp(*)),
     timeline_events(*)
   `).order('created_at',{ascending:false});
   if(error){ toast('Error loading data: '+error.message); return; }
@@ -1098,9 +1101,10 @@ async function openDP(id){
     salBlock=`<div class="sal-locked"><i class="ti ti-eye-off" style="margin-right:4px"></i>Salary hidden — contact your TA to reveal</div>`;
   }
 
-  // Format CTC
-  const ctcStr=c.curctc?(c.curctc+' LPA'+(c.ctc_fixed?' (Fixed: '+c.ctc_fixed+' + Variable: '+(c.ctc_variable||0)+')'  :'')):' —';
-  const expCtcStr=(c.expctc_min&&c.expctc_max)?(c.expctc_min+'–'+c.expctc_max+' LPA'+(c.expctc_neg?' (Negotiable)':'')):'—';
+  // Format CTC (from candidate_comp — access is RLS-gated per role + sal_visible)
+  const cc=compOf(c);
+  const ctcStr=cc.curctc?(cc.curctc+' LPA'+(cc.ctc_fixed?' (Fixed: '+cc.ctc_fixed+' + Variable: '+(cc.ctc_variable||0)+')'  :'')):' —';
+  const expCtcStr=(cc.expctc_min&&cc.expctc_max)?(cc.expctc_min+'–'+cc.expctc_max+' LPA'+(cc.expctc_neg?' (Negotiable)':'')):'—';
 
   const cmtsHtml=(cmts||[]).length
     ?(cmts.map(cm=>`<div class="cmt"><div class="cmt-meta">${esc(cm.by_name)||'—'} · ${new Date(cm.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div><div class="cmt-text">${esc(cm.text)}</div></div>`).join(''))
@@ -1228,15 +1232,16 @@ async function openEdit(id){
   editId=id;
   const proc=processes.find(p=>p.id===id); if(!proc) return;
   const c=proc.candidates||{};
+  const cc=compOf(c);
   const g=(fid,val)=>{const el=document.getElementById(fid);if(el)el.value=val||'';};
   g('e-role',proc.role); g('e-dept',proc.dept);
   g('e-cname',c.name); g('e-email',c.email); g('e-phone',c.phone);
   g('e-org',c.org); g('e-desig',c.desig);
   g('e-exp',c.exp); g('e-rexp',c.rexp); g('e-np',c.np);
-  g('e-curctc',c.curctc); g('e-expmin',c.expctc_min); g('e-expmax',c.expctc_max);
+  g('e-curctc',cc.curctc); g('e-expmin',cc.expctc_min); g('e-expmax',cc.expctc_max);
   const er=document.getElementById('e-rounds'); if(er) er.value=proc.rounds||2;
   const enpNeg=document.getElementById('e-np-neg'); if(enpNeg) enpNeg.checked=!!c.np_neg;
-  const eexpNeg=document.getElementById('e-expctc-neg'); if(eexpNeg) eexpNeg.checked=!!c.expctc_neg;
+  const eexpNeg=document.getElementById('e-expctc-neg'); if(eexpNeg) eexpNeg.checked=!!cc.expctc_neg;
   populateDropdown('e-ta','TA',null);
   populateDropdown('e-hm','HM',proc.current_hm_name);
   openMo('moEdit');
@@ -1252,7 +1257,7 @@ async function saveEdit(){
   if(taName) procUp.assigned_ta=taName;
   const {error:pe}=await sb.from('processes').update(procUp).eq('id',editId);
   if(pe){toast('Error: '+pe.message);return;}
-  // Update candidate
+  // Update candidate (non-salary fields)
   const candUp={};
   if(g('e-cname')) candUp.name=g('e-cname');
   if(g('e-email')) candUp.email=g('e-email');
@@ -1263,12 +1268,17 @@ async function saveEdit(){
   if(g('e-rexp'))  candUp.rexp=parseFloat(g('e-rexp'));
   if(g('e-np'))    candUp.np=g('e-np');
   candUp.np_neg=document.getElementById('e-np-neg')?.checked||false;
-  if(g('e-curctc'))candUp.curctc=parseFloat(g('e-curctc'));
-  if(g('e-expmin'))candUp.expctc_min=parseFloat(g('e-expmin'));
-  if(g('e-expmax'))candUp.expctc_max=parseFloat(g('e-expmax'));
-  candUp.expctc_neg=document.getElementById('e-expctc-neg')?.checked||false;
   if(Object.keys(candUp).length&&proc.candidate_id){
     await sb.from('candidates').update(candUp).eq('id',proc.candidate_id);
+  }
+  // Update salary in candidate_comp (separate RLS-gated table)
+  if(proc.candidate_id){
+    const compUp={candidate_id:proc.candidate_id, expctc_neg:document.getElementById('e-expctc-neg')?.checked||false};
+    if(g('e-curctc'))compUp.curctc=parseFloat(g('e-curctc'));
+    if(g('e-expmin'))compUp.expctc_min=parseFloat(g('e-expmin'));
+    if(g('e-expmax'))compUp.expctc_max=parseFloat(g('e-expmax'));
+    const {error:ceu}=await sb.from('candidate_comp').upsert(compUp,{onConflict:'candidate_id'});
+    if(ceu){toast('Error saving compensation: '+ceu.message);return;}
   }
   closeMo('moEdit');
   await loadProcesses();
@@ -1455,15 +1465,21 @@ async function submitNew(){
     wfo:document.getElementById('f-wfo').value,
     shift:document.getElementById('f-shift').value,
     src:document.getElementById('f-src').value,
-    slots:document.getElementById('f-slots').value||null,
+    slots:document.getElementById('f-slots').value||null
+  }).select().single();
+  if(ce){toast('Error creating candidate: '+ce.message);return;}
+
+  // Insert compensation into the separate RLS-gated table
+  const {error:cce}=await sb.from('candidate_comp').insert({
+    candidate_id:cand.id,
     curctc:parseFloat(document.getElementById('f-curctc').value)||null,
     ctc_fixed:ctcSplit?parseFloat(document.getElementById('f-ctc-fixed').value)||null:null,
     ctc_variable:ctcSplit?parseFloat(document.getElementById('f-ctc-var').value)||null:null,
     expctc_min:expMin,
     expctc_max:expMax,
     expctc_neg:document.getElementById('f-expctc-neg')?.checked||false
-  }).select().single();
-  if(ce){toast('Error creating candidate: '+ce.message);return;}
+  });
+  if(cce){toast('Error saving compensation: '+cce.message);return;}
 
   // Insert process
   const {data:proc,error:pe}=await sb.from('processes').insert({
@@ -1726,9 +1742,10 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
   const hrHMName = hrRound?.hm_name||'';
   const isHRHM = isHM && currentProfile.full_name === hrHMName;
 
-  // Auto-populate fields
-  const expCtc = c.expctc_min&&c.expctc_max ? c.expctc_min+'–'+c.expctc_max+' LPA'+(c.expctc_neg?' (Neg.)':'') : '—';
-  const curCtc = c.curctc ? c.curctc+' LPA'+(c.ctc_fixed?` (F:${c.ctc_fixed} V:${c.ctc_variable||0})`:'') : '—';
+  // Auto-populate fields (compensation from candidate_comp, RLS-gated)
+  const cc = compOf(c);
+  const expCtc = cc.expctc_min&&cc.expctc_max ? cc.expctc_min+'–'+cc.expctc_max+' LPA'+(cc.expctc_neg?' (Neg.)':'') : '—';
+  const curCtc = cc.curctc ? cc.curctc+' LPA'+(cc.ctc_fixed?` (F:${cc.ctc_fixed} V:${cc.ctc_variable||0})`:'') : '—';
 
   // Section B — competency table columns based on rounds
   const cols = roundHMs.length > 0 ? roundHMs : [{roundName:'—',hmName:'Not assigned yet'}];
@@ -1994,10 +2011,14 @@ async function saveTEF() {
   };
   // Remove null keys to avoid overwriting existing data
   Object.keys(hrPayload).forEach(k=>{ if(hrPayload[k]===null) delete hrPayload[k]; });
+  // Only write the HR/TA section when there is real content beyond process_id.
+  // Prevents an empty upsert (which RLS denies for HMs who don't own the HR section).
+  const hasHrContent = Object.keys(hrPayload).some(k=>k!=='process_id');
   hrPayload.process_id = tefProcessId; // always keep process_id
-
-  const {error} = await sb.from('tef_hr').upsert(hrPayload, {onConflict:'process_id'});
-  if(error){ toast('Error saving TEF: '+error.message); return; }
+  if(hasHrContent){
+    const {error} = await sb.from('tef_hr').upsert(hrPayload, {onConflict:'process_id'});
+    if(error){ toast('Error saving TEF: '+error.message); return; }
+  }
 
   // Sync full page content if open
   document.getElementById('tefFullContent').innerHTML = document.getElementById('tefPanelContent').innerHTML;
