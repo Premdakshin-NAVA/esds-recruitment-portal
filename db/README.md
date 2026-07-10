@@ -23,9 +23,9 @@ an admin/developer can pre-authorize a role by email (the "Add admins" panel on
 the Team page). `initApp()` consults it on first login. A signing-in user can
 read only their own row; admins/developers manage all rows.
 
-## 002 — `cutover_role_rls_and_drop_salary.sql` — ⏳ PENDING (BREAKING)
-Apply **only in the same window** as merging the new `index.html` to `main`,
-because it changes the data model and access rules the frontend depends on:
+## 002 — `cutover_role_rls_and_drop_salary.sql` — ✅ APPLIED (cutover complete)
+Applied after merging the new `index.html` to `main`. Changed the data model
+and access rules the frontend depends on:
 1. Re-backfills `candidate_comp` for any candidates the old frontend created
    since 001.
 2. **Drops** the salary columns from `candidates` (so hidden salary can never

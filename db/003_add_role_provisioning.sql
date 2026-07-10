@@ -19,7 +19,7 @@ alter table public.role_provisioning enable row level security;
 -- (by email from the JWT) so first-login provisioning works before a profile exists.
 create policy "prov select" on public.role_provisioning for select using (
   (select public.app_role()) in ('admin','developer')
-  or email = (select auth.jwt()->>'email')
+  or email = ((select auth.jwt()) ->> 'email')
 );
 create policy "prov insert" on public.role_provisioning for insert
   with check ((select public.app_role()) in ('admin','developer'));
