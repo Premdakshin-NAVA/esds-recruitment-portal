@@ -708,6 +708,10 @@ let pendingSalId  = null;
 let pendingSalVal = null;
 
 // ── HELPERS ──
+function esc(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function initials(n){ return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 function today(){ return new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
 function perm(){ return PERMS[activeRole] || PERMS.hm; }
@@ -1009,12 +1013,12 @@ function renderTable(){
     const taName=proc.assigned_ta||'—';
     const hmName=proc.current_hm_name||'Pending';
     return `<tr onclick="openDP('${proc.id}')">
-      <td><div class="c-name">${c.name||'—'}</div><div class="c-meta">${c.org||'—'} · ${c.exp||0}y / ${c.rexp||0}y rel</div></td>
-      <td><div>${proc.role}</div><div class="r-dept">${proc.dept||'—'}</div></td>
-      <td><span class="sp"><span class="sd ${dotCls(proc.stage,proc.status)}"></span>${proc.stage}</span></td>
+      <td><div class="c-name">${esc(c.name)||'—'}</div><div class="c-meta">${esc(c.org)||'—'} · ${c.exp||0}y / ${c.rexp||0}y rel</div></td>
+      <td><div>${esc(proc.role)}</div><div class="r-dept">${esc(proc.dept)||'—'}</div></td>
+      <td><span class="sp"><span class="sd ${dotCls(proc.stage,proc.status)}"></span>${esc(proc.stage)}</span></td>
       <td>${badge(proc.status)}</td>
-      <td><div class="ta-chip"><div class="ta-av">${initials(taName)}</div>${taName}</div></td>
-      <td style="font-size:13px;color:var(--tx2)">${hmName}</td>
+      <td><div class="ta-chip"><div class="ta-av">${initials(taName)}</div>${esc(taName)}</div></td>
+      <td style="font-size:13px;color:var(--tx2)">${esc(hmName)}</td>
       <td style="font-size:13px;color:var(--tx2);text-align:center">${proc.days||0}d</td>
       <td><div class="acts" onclick="event.stopPropagation()">
         <button class="ib" onclick="openDP('${proc.id}')"><i class="ti ti-eye"></i></button>
@@ -1061,17 +1065,17 @@ async function openDP(id){
   const expCtcStr=(c.expctc_min&&c.expctc_max)?(c.expctc_min+'–'+c.expctc_max+' LPA'+(c.expctc_neg?' (Negotiable)':'')):'—';
 
   const cmtsHtml=(cmts||[]).length
-    ?(cmts.map(cm=>`<div class="cmt"><div class="cmt-meta">${cm.by_name||'—'} · ${new Date(cm.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div><div class="cmt-text">${cm.text}</div></div>`).join(''))
+    ?(cmts.map(cm=>`<div class="cmt"><div class="cmt-meta">${esc(cm.by_name)||'—'} · ${new Date(cm.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div><div class="cmt-text">${esc(cm.text)}</div></div>`).join(''))
     :'<p style="font-size:13px;color:var(--txm)">No comments yet.</p>';
 
   const tlHtml=(tl||[]).map(t=>`
     <div class="tli">
       <div class="tl-ic ${icClass(t.state)}"><i class="ti ti-${icIcon(t.state)}"></i></div>
       <div style="flex:1;min-width:0">
-        <div class="tl-s">${t.label}</div>
-        <div class="tl-d">${t.detail||''}</div>
-        ${t.conductor_name&&t.conductor_name!=='—'?`<div class="tl-owner"><i class="ti ti-user"></i> Conducted by: <strong>${t.conductor_name}</strong></div>`:''}
-        ${t.updated_by_name?`<div class="tl-owner"><i class="ti ti-edit"></i> Updated by: ${t.updated_by_name}</div>`:''}
+        <div class="tl-s">${esc(t.label)}</div>
+        <div class="tl-d">${esc(t.detail)||''}</div>
+        ${t.conductor_name&&t.conductor_name!=='—'?`<div class="tl-owner"><i class="ti ti-user"></i> Conducted by: <strong>${esc(t.conductor_name)}</strong></div>`:''}
+        ${t.updated_by_name?`<div class="tl-owner"><i class="ti ti-edit"></i> Updated by: ${esc(t.updated_by_name)}</div>`:''}
         <div class="tl-dt">${new Date(t.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
       </div>
     </div>`).join('');
@@ -1079,20 +1083,20 @@ async function openDP(id){
   document.getElementById('dpBody').innerHTML=`
     <div class="ds">
       <div class="ds-title">Candidate info</div>
-      <div class="ir"><span class="il">Organization</span><span class="iv">${c.org||'—'}</span></div>
-      <div class="ir"><span class="il">Designation</span><span class="iv">${c.desig||'—'}</span></div>
+      <div class="ir"><span class="il">Organization</span><span class="iv">${esc(c.org)||'—'}</span></div>
+      <div class="ir"><span class="il">Designation</span><span class="iv">${esc(c.desig)||'—'}</span></div>
       <div class="ir"><span class="il">Experience</span><span class="iv">${c.exp||0} yrs total / ${c.rexp||0} yrs relevant</span></div>
-      <div class="ir"><span class="il">Education</span><span class="iv">${c.edu||'—'}</span></div>
-      <div class="ir"><span class="il">Notice period</span><span class="iv">${c.np||'—'}${c.np_neg?' (Negotiable)':''}</span></div>
-      <div class="ir"><span class="il">Location</span><span class="iv">${c.cloc||'—'} → ${c.ploc||'—'}</span></div>
-      <div class="ir"><span class="il">WFO / Rotational</span><span class="iv">${c.wfo||'—'} / ${c.shift||'—'}</span></div>
-      <div class="ir"><span class="il">Source</span><span class="iv">${c.src||'—'}</span></div>
+      <div class="ir"><span class="il">Education</span><span class="iv">${esc(c.edu)||'—'}</span></div>
+      <div class="ir"><span class="il">Notice period</span><span class="iv">${esc(c.np)||'—'}${c.np_neg?' (Negotiable)':''}</span></div>
+      <div class="ir"><span class="il">Location</span><span class="iv">${esc(c.cloc)||'—'} → ${esc(c.ploc)||'—'}</span></div>
+      <div class="ir"><span class="il">WFO / Rotational</span><span class="iv">${esc(c.wfo)||'—'} / ${esc(c.shift)||'—'}</span></div>
+      <div class="ir"><span class="il">Source</span><span class="iv">${esc(c.src)||'—'}</span></div>
     </div>
     <div class="ds">
       <div class="ds-title">Process info</div>
       <div class="ir"><span class="il">Days in pipeline</span><span class="iv">${proc.days||0} days</span></div>
       <div class="ir"><span class="il">Interview rounds</span><span class="iv">${proc.rounds||2}</span></div>
-      <div class="ir"><span class="il">Current stage</span><span class="iv">${proc.stage}</span></div>
+      <div class="ir"><span class="il">Current stage</span><span class="iv">${esc(proc.stage)}</span></div>
       <div class="ir"><span class="il">Status</span><span class="iv">${badge(proc.status)}</span></div>
     </div>
     <div class="ds">
@@ -1253,8 +1257,8 @@ function openStatus(id){
   // Populate all dropdowns — conductor and HM assign
   const all=[...(teamMembers.HM||[]).map(m=>m.full_name),...(teamMembers.TA||[]).map(m=>m.full_name)];
   const hmOnly=(teamMembers.HM||[]).map(m=>m.full_name);
-  document.getElementById('st-conductor').innerHTML=`<option value="">— Select person —</option>`+all.map(n=>`<option>${n}</option>`).join('');
-  document.getElementById('st-hm-assign').innerHTML=`<option value="">— Select HM for this round —</option>`+hmOnly.map(n=>`<option>${n}</option>`).join('');
+  document.getElementById('st-conductor').innerHTML=`<option value="">— Select person —</option>`+all.map(n=>`<option>${esc(n)}</option>`).join('');
+  document.getElementById('st-hm-assign').innerHTML=`<option value="">— Select HM for this round —</option>`+hmOnly.map(n=>`<option>${esc(n)}</option>`).join('');
   // Show HM row and schedule row if current stage is already scheduled
   if(selStageVal&&selStageVal.toLowerCase().includes('scheduled')){
     if(hmRow) hmRow.style.display='block';
@@ -1478,7 +1482,7 @@ function renderMemberList(type){
     <div class="team-member">
       <div class="tm-info">
         <div class="tm-av tm-av-${type.toLowerCase()}">${initials(m.full_name)}</div>
-        <div><div class="tm-name">${m.full_name}</div><div class="tm-email">${m.email||'No email added'}</div></div>
+        <div><div class="tm-name">${esc(m.full_name)}</div><div class="tm-email">${esc(m.email)||'No email added'}</div></div>
       </div>
       ${canManage?`<button class="ib" onclick="removeMember('${m.id}','${type}')"><i class="ti ti-trash" style="color:var(--err-tx)"></i></button>`:''}
     </div>`).join('');
@@ -1510,7 +1514,7 @@ async function removeMember(id,type){
 function populateDropdown(selId,type,currentVal){
   const sel=document.getElementById(selId); if(!sel) return;
   const members=teamMembers[type]||[];
-  sel.innerHTML=members.map(m=>`<option value="${m.full_name}" ${m.full_name===currentVal?'selected':''}>${m.full_name}</option>`).join('');
+  sel.innerHTML=members.map(m=>`<option value="${esc(m.full_name)}" ${m.full_name===currentVal?'selected':''}>${esc(m.full_name)}</option>`).join('');
   if(!members.length) sel.innerHTML=`<option value="">No ${type} added yet — go to Team page</option>`;
 }
 
@@ -1634,7 +1638,7 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
 
   // Section B — competency table columns based on rounds
   const cols = roundHMs.length > 0 ? roundHMs : [{roundName:'—',hmName:'Not assigned yet'}];
-  const hmColHeaders = cols.map(r=>`<th style="min-width:120px">${r.hmName||'—'}<br><span style="font-weight:400;font-size:10px;color:var(--txm)">${r.roundName}</span></th>`).join('');
+  const hmColHeaders = cols.map(r=>`<th style="min-width:120px">${esc(r.hmName)||'—'}<br><span style="font-weight:400;font-size:10px;color:var(--txm)">${esc(r.roundName)}</span></th>`).join('');
 
   const ratingRows = COMPETENCIES.map((comp, ci) => {
     const cells = cols.map((r, hi) => {
@@ -1675,21 +1679,21 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
     <div style="margin-bottom:16px;padding:14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r)">
       <div style="font-size:12px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--ok-bg);color:var(--ok-tx);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">${initials(r.hmName)}</div>
-        ${r.hmName||'—'} <span style="font-weight:400;color:var(--txm)">· ${r.roundName} Round</span>
+        ${esc(r.hmName)||'—'} <span style="font-weight:400;color:var(--txm)">· ${esc(r.roundName)} Round</span>
         ${canEdit?'<span style="font-size:10px;background:var(--acc-bg);color:var(--acc-tx);padding:2px 8px;border-radius:10px">Editable</span>':'<span style="font-size:10px;background:var(--surf);color:var(--txm);border:1px solid var(--bdr);padding:2px 8px;border-radius:10px">View only</span>'}
       </div>
       <div class="tef-field" style="margin-bottom:10px">
         <div class="tef-label">Interview comments & feedback</div>
-        ${canEdit?`<textarea class="tef-input" id="tef-comments-h${hi}" placeholder="Behavioural and technical feedback…">${comments}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${comments||'No comments added yet'}</div>`}
+        ${canEdit?`<textarea class="tef-input" id="tef-comments-h${hi}" placeholder="Behavioural and technical feedback…">${esc(comments)}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${esc(comments)||'No comments added yet'}</div>`}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="tef-field">
           <div class="tef-label">One reason to hire</div>
-          ${canEdit?`<textarea class="tef-input" id="tef-hire-h${hi}" style="min-height:55px" placeholder="Key reason to hire…">${hireReason}</textarea>`:`<div class="tef-val" style="min-height:55px;white-space:pre-wrap">${hireReason||'—'}</div>`}
+          ${canEdit?`<textarea class="tef-input" id="tef-hire-h${hi}" style="min-height:55px" placeholder="Key reason to hire…">${esc(hireReason)}</textarea>`:`<div class="tef-val" style="min-height:55px;white-space:pre-wrap">${esc(hireReason)||'—'}</div>`}
         </div>
         <div class="tef-field">
           <div class="tef-label">One reason not to hire</div>
-          ${canEdit?`<textarea class="tef-input" id="tef-nohire-h${hi}" style="min-height:55px" placeholder="Key concern…">${noHireReason}</textarea>`:`<div class="tef-val" style="min-height:55px;white-space:pre-wrap">${noHireReason||'—'}</div>`}
+          ${canEdit?`<textarea class="tef-input" id="tef-nohire-h${hi}" style="min-height:55px" placeholder="Key concern…">${esc(noHireReason)}</textarea>`:`<div class="tef-val" style="min-height:55px;white-space:pre-wrap">${esc(noHireReason)||'—'}</div>`}
         </div>
       </div>
     </div>`;
@@ -1711,29 +1715,29 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
     <div class="tef-section-title">Section A — Candidate Information <span style="font-weight:400;color:var(--ok-tx);font-size:11px">(auto-populated)</span></div>
     <div class="tef-body">
       <div class="tef-grid">
-        <div class="tef-field"><div class="tef-label">Candidate name</div><div class="tef-val">${c.name||'—'}</div></div>
-        <div class="tef-field"><div class="tef-label">Highest qualification</div><div class="tef-val">${c.edu||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Candidate name</div><div class="tef-val">${esc(c.name)||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Highest qualification</div><div class="tef-val">${esc(c.edu)||'—'}</div></div>
         <div class="tef-field"><div class="tef-label">Date</div><div class="tef-val">${today()}</div></div>
-        <div class="tef-field"><div class="tef-label">Current company</div><div class="tef-val">${c.org||'—'}</div></div>
-        <div class="tef-field"><div class="tef-label">Role assessed for</div><div class="tef-val">${proc.role||'—'}</div></div>
-        <div class="tef-field"><div class="tef-label">Department</div><div class="tef-val">${proc.dept||'—'}</div></div>
-        <div class="tef-field"><div class="tef-label">Current location</div><div class="tef-val">${c.cloc||'—'}</div></div>
-        <div class="tef-field"><div class="tef-label">Proposed location</div><div class="tef-val">${c.ploc||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Current company</div><div class="tef-val">${esc(c.org)||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Role assessed for</div><div class="tef-val">${esc(proc.role)||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Department</div><div class="tef-val">${esc(proc.dept)||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Current location</div><div class="tef-val">${esc(c.cloc)||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Proposed location</div><div class="tef-val">${esc(c.ploc)||'—'}</div></div>
         <div class="tef-field"><div class="tef-label">Total experience</div><div class="tef-val">${c.exp||0} yrs</div></div>
         <div class="tef-field"><div class="tef-label">Relevant experience</div><div class="tef-val">${c.rexp||0} yrs</div></div>
-        <div class="tef-field"><div class="tef-label">Source of hiring</div><div class="tef-val">${c.src||'—'}</div></div>
+        <div class="tef-field"><div class="tef-label">Source of hiring</div><div class="tef-val">${esc(c.src)||'—'}</div></div>
         <div class="tef-field"><div class="tef-label">Current CTC</div><div class="tef-val">${curCtc}</div></div>
         <div class="tef-field"><div class="tef-label">Expected CTC</div><div class="tef-val">${expCtc}</div></div>
-        <div class="tef-field"><div class="tef-label">Notice period</div><div class="tef-val">${c.np||'—'}${c.np_neg?' (Negotiable)':''}</div></div>
+        <div class="tef-field"><div class="tef-label">Notice period</div><div class="tef-val">${esc(c.np)||'—'}${c.np_neg?' (Negotiable)':''}</div></div>
       </div>
       <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <div class="tef-field">
           <div class="tef-label">New / Replacement</div>
-          ${isAdmin||isTA?`<select class="tef-input" id="tef-new-rep"><option value="">—</option><option ${d.new_replacement==='New'?'selected':''}>New</option><option ${d.new_replacement==='Replacement'?'selected':''}>Replacement</option></select>`:`<div class="tef-val">${d.new_replacement||'—'}</div>`}
+          ${isAdmin||isTA?`<select class="tef-input" id="tef-new-rep"><option value="">—</option><option ${d.new_replacement==='New'?'selected':''}>New</option><option ${d.new_replacement==='Replacement'?'selected':''}>Replacement</option></select>`:`<div class="tef-val">${esc(d.new_replacement)||'—'}</div>`}
         </div>
         <div class="tef-field" style="grid-column:span 2">
           <div class="tef-label">Replacement name (if applicable)</div>
-          ${isAdmin||isTA?`<input class="tef-input" id="tef-rep-name" value="${d.replacement_name||''}" placeholder="Name of person being replaced">`:`<div class="tef-val">${d.replacement_name||'—'}</div>`}
+          ${isAdmin||isTA?`<input class="tef-input" id="tef-rep-name" value="${esc(d.replacement_name)}" placeholder="Name of person being replaced">`:`<div class="tef-val">${esc(d.replacement_name)||'—'}</div>`}
         </div>
       </div>
     </div>
@@ -1767,24 +1771,24 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
     <div class="tef-section-title">Section D — HR Interviewer Assessment ${sectionDNote}</div>
     <div class="tef-body">
       <div style="margin-bottom:14px;padding:10px 12px;background:var(--acc-bg);border-radius:var(--r);font-size:13px">
-        <strong>HR round HM:</strong> ${hrHMDisplay}
+        <strong>HR round HM:</strong> ${esc(hrHMDisplay)}
         ${isHRHM?'<span style="margin-left:8px;font-size:11px;color:var(--ok-tx);font-weight:600">✓ You are filling this section</span>':''}
       </div>
       <div class="tef-field" style="margin-bottom:12px">
         <div class="tef-label">Strengths</div>
-        ${canEditSectionD?`<textarea class="tef-input" id="tef-strengths" placeholder="Key strengths observed…">${d.strengths||''}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${d.strengths||'—'}</div>`}
+        ${canEditSectionD?`<textarea class="tef-input" id="tef-strengths" placeholder="Key strengths observed…">${esc(d.strengths)}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${esc(d.strengths)||'—'}</div>`}
       </div>
       <div class="tef-field" style="margin-bottom:12px">
         <div class="tef-label">Weaknesses / Areas to improve</div>
-        ${canEditSectionD?`<textarea class="tef-input" id="tef-weaknesses" placeholder="Areas that need development…">${d.weaknesses||''}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${d.weaknesses||'—'}</div>`}
+        ${canEditSectionD?`<textarea class="tef-input" id="tef-weaknesses" placeholder="Areas that need development…">${esc(d.weaknesses)}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${esc(d.weaknesses)||'—'}</div>`}
       </div>
       <div class="tef-field" style="margin-bottom:12px">
         <div class="tef-label">Overall observation</div>
-        ${canEditSectionD?`<textarea class="tef-input" id="tef-observation" placeholder="Overall assessment…">${d.overall_observation||''}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${d.overall_observation||'—'}</div>`}
+        ${canEditSectionD?`<textarea class="tef-input" id="tef-observation" placeholder="Overall assessment…">${esc(d.overall_observation)}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${esc(d.overall_observation)||'—'}</div>`}
       </div>
       <div class="tef-field">
         <div class="tef-label">Reason to hire (HR perspective)</div>
-        ${canEditSectionD?`<textarea class="tef-input" id="tef-hr-hire-reason" placeholder="HR's reason to recommend hiring…">${d.reason_to_hire||''}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${d.reason_to_hire||'—'}</div>`}
+        ${canEditSectionD?`<textarea class="tef-input" id="tef-hr-hire-reason" placeholder="HR's reason to recommend hiring…">${esc(d.reason_to_hire)}</textarea>`:`<div class="tef-val" style="min-height:60px;white-space:pre-wrap">${esc(d.reason_to_hire)||'—'}</div>`}
       </div>
     </div>
   </div>
@@ -1796,19 +1800,19 @@ function buildTEFHTML(proc, c, processRounds, interviewerRatings, p) {
       <div class="tef-grid" style="margin-bottom:14px">
         <div class="tef-field">
           <div class="tef-label">Designation &amp; Grade</div>
-          ${canEditSectionE?`<input class="tef-input" id="tef-desig" value="${d.designation||''}" placeholder="e.g. Software Engineer L2">`:`<div class="tef-val">${d.designation||'—'}</div>`}
+          ${canEditSectionE?`<input class="tef-input" id="tef-desig" value="${esc(d.designation)}" placeholder="e.g. Software Engineer L2">`:`<div class="tef-val">${esc(d.designation)||'—'}</div>`}
         </div>
         <div class="tef-field">
           <div class="tef-label">Reporting to</div>
-          ${canEditSectionE?`<input class="tef-input" id="tef-reporting" value="${d.reporting||''}" placeholder="Reporting manager">`:`<div class="tef-val">${d.reporting||'—'}</div>`}
+          ${canEditSectionE?`<input class="tef-input" id="tef-reporting" value="${esc(d.reporting)}" placeholder="Reporting manager">`:`<div class="tef-val">${esc(d.reporting)||'—'}</div>`}
         </div>
         <div class="tef-field">
           <div class="tef-label">Department</div>
-          ${canEditSectionE?`<input class="tef-input" id="tef-ta-dept" value="${d.department||proc.dept||''}">`:`<div class="tef-val">${d.department||proc.dept||'—'}</div>`}
+          ${canEditSectionE?`<input class="tef-input" id="tef-ta-dept" value="${esc(d.department||proc.dept)}">`:`<div class="tef-val">${esc(d.department||proc.dept)||'—'}</div>`}
         </div>
         <div class="tef-field">
           <div class="tef-label">Location</div>
-          ${canEditSectionE?`<input class="tef-input" id="tef-ta-loc" value="${d.location||proc.jloc||''}">`:`<div class="tef-val">${d.location||proc.jloc||'—'}</div>`}
+          ${canEditSectionE?`<input class="tef-input" id="tef-ta-loc" value="${esc(d.location||proc.jloc)}">`:`<div class="tef-val">${esc(d.location||proc.jloc)||'—'}</div>`}
         </div>
       </div>
       <div class="tef-field">
