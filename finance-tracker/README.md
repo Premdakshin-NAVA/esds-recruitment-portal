@@ -3,6 +3,9 @@
 Personal expense tracker (see `BRE.md` for full requirements). Lives in its own
 dedicated Supabase project, separate from the recruitment portal.
 
+**Live portal:** https://moatomqvfwwpvnhwnfiy.supabase.co/functions/v1/portal
+(Supabase project `finance-tracker`, ref `moatomqvfwwpvnhwnfiy`, ap-south-1)
+
 ## Layout
 
 | Path | What it is |
