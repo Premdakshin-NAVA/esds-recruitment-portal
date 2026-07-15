@@ -169,6 +169,24 @@ tbody tr:hover{background:var(--surf2)}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a19;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;display:none;align-items:center;gap:12px;z-index:80;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:90vw}
 #toast button{background:#3987e5;border:none;color:#fff;border-radius:6px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
 #tip{position:fixed;background:#1a1a19;color:#fff;font-size:12px;border-radius:6px;padding:5px 9px;pointer-events:none;display:none;z-index:90;white-space:nowrap}
+
+/* ── MOBILE ── */
+@media(max-width:720px){
+  .app.on{flex-direction:column}
+  .sb{width:100%;min-width:0;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--bdr)}
+  .sb-logo{border-bottom:none;padding:10px 12px}
+  .sb-logo .sb-title{display:none}
+  .nav{display:flex;padding:0;flex:1;justify-content:center;gap:2px}
+  .nav-item{padding:10px;border-right:none}
+  .nav-item.active{border-right:none;border-bottom:2px solid var(--acc)}
+  .nav-item i{font-size:18px}
+  .nav-item .nav-lbl{display:none}
+  .sb-user{border-top:none;padding:10px 12px}
+  .sb-user span{display:none}
+  .main{padding:14px 12px}
+  .hbar-row{grid-template-columns:90px 1fr 70px}
+  .filters .inp{width:100%}
+}
 </style>
 </head>
 <body>
@@ -195,10 +213,10 @@ tbody tr:hover{background:var(--surf2)}
   <div class="sb">
     <div class="sb-logo"><div class="sb-icon"><i class="ti ti-wallet"></i></div><div class="sb-title">Finance Tracker</div></div>
     <div class="nav">
-      <div class="nav-item" data-v="dash" onclick="nav('dash')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
-      <div class="nav-item" data-v="tx" onclick="nav('tx')"><i class="ti ti-list-details"></i>Transactions</div>
-      <div class="nav-item" data-v="review" onclick="nav('review')"><i class="ti ti-alert-circle"></i>Review<span class="nav-badge" id="revBadge"></span></div>
-      <div class="nav-item" data-v="cats" onclick="nav('cats')"><i class="ti ti-tags"></i>Categories</div>
+      <div class="nav-item" data-v="dash" onclick="nav('dash')"><i class="ti ti-layout-dashboard"></i><span class="nav-lbl">Dashboard</span></div>
+      <div class="nav-item" data-v="tx" onclick="nav('tx')"><i class="ti ti-list-details"></i><span class="nav-lbl">Transactions</span></div>
+      <div class="nav-item" data-v="review" onclick="nav('review')"><i class="ti ti-alert-circle"></i><span class="nav-lbl">Review</span><span class="nav-badge" id="revBadge"></span></div>
+      <div class="nav-item" data-v="cats" onclick="nav('cats')"><i class="ti ti-tags"></i><span class="nav-lbl">Categories</span></div>
     </div>
     <div class="sb-user"><span id="userEmail"></span><i class="ti ti-logout" title="Sign out" onclick="signOut()"></i></div>
   </div>
@@ -424,13 +442,43 @@ function monthOptions(){
   return out;
 }
 function setTxFilter(k,v){txFilters[k]=v;txPage=0;renderTx();}
+function buildTxQuery(){
+  let q=db.from('transactions').select('*').order('occurred_at',{ascending:false});
+  const mv=txFilters.month==='cur'?`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`:txFilters.month;
+  if(mv!=='all'){
+    const[y,m]=mv.split('-').map(Number);
+    q=q.gte('occurred_at',new Date(y,m-1,1).toISOString()).lt('occurred_at',new Date(y,m,1).toISOString());
+  }
+  if(txFilters.cat==='none')q=q.is('category_id',null);
+  else if(txFilters.cat!=='all')q=q.eq('category_id',txFilters.cat);
+  if(txFilters.status!=='all')q=q.eq('status',txFilters.status);
+  if(txFilters.q){const s=escLike(txFilters.q.replace(/,/g,' ').trim());q=q.or(`merchant.ilike.%${s}%,notes.ilike.%${s}%`);}
+  return q;
+}
+async function exportCsv(){
+  const{data}=await buildTxQuery().limit(10000);
+  const rows=data||[];
+  if(!rows.length){toast('Nothing to export for the current filters');return;}
+  const cols=['occurred_at','direction','amount','currency','merchant','category','status','channel','account','ref_no','source','notes'];
+  const csv=[cols.join(',')].concat(rows.map(t=>{
+    const vals=[t.occurred_at,t.direction,t.amount,t.currency,t.merchant,catById(t.category_id)?.name||'',t.status,t.channel,t.account_hint,t.ref_no,t.source,t.notes];
+    return vals.map(v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');
+  })).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='transactions.csv';a.click();
+  toast(`Exported ${rows.length} transactions`);
+}
 async function renderTx(more){
   const el=$('#view-tx');
   if(!more){
     el.innerHTML=`
     <div class="pg-head">
       <div class="pg-title">Transactions</div>
-      <button class="btn pri" onclick="openTxModal()"><i class="ti ti-plus"></i>Add transaction</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="exportCsv()"><i class="ti ti-download"></i>CSV</button>
+        <button class="btn pri" onclick="openTxModal()"><i class="ti ti-plus"></i>Add</button>
+      </div>
     </div>
     <div class="filters">
       <select class="sel" onchange="setTxFilter('month',this.value)">${monthOptions()}</select>
@@ -448,17 +496,7 @@ async function renderTx(more){
     </div>
     <div id="txBody"></div>`;
   }
-  let q=db.from('transactions').select('*').order('occurred_at',{ascending:false}).range(txPage*TX_PAGE,(txPage+1)*TX_PAGE-1);
-  const mv=txFilters.month==='cur'?`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`:txFilters.month;
-  if(mv!=='all'){
-    const[y,m]=mv.split('-').map(Number);
-    q=q.gte('occurred_at',new Date(y,m-1,1).toISOString()).lt('occurred_at',new Date(y,m,1).toISOString());
-  }
-  if(txFilters.cat==='none')q=q.is('category_id',null);
-  else if(txFilters.cat!=='all')q=q.eq('category_id',txFilters.cat);
-  if(txFilters.status!=='all')q=q.eq('status',txFilters.status);
-  if(txFilters.q){const s=escLike(txFilters.q.replace(/,/g,' ').trim());q=q.or(`merchant.ilike.%${s}%,notes.ilike.%${s}%`);}
-  const{data,error}=await q;
+  const{data,error}=await buildTxQuery().range(txPage*TX_PAGE,(txPage+1)*TX_PAGE-1);
   const rows=data||[];
   window._txCache=(more?window._txCache:[]).concat(rows);
   const body=$('#txBody');
@@ -482,6 +520,7 @@ async function renderTx(more){
 /* ── TX MODAL ── */
 async function openTxModal(id){
   let t={direction:'debit',amount:'',occurred_at:new Date().toISOString(),merchant:'',category_id:null,channel:'',account_hint:'',notes:'',currency:'INR'};
+  if(!id&&rawPrefill)t.notes=rawPrefill.notes;
   if(id){
     const{data}=await db.from('transactions').select('*').eq('id',id).single();
     if(data)t=data;
@@ -526,7 +565,7 @@ async function openTxModal(id){
     if(s&&!$('#mCat').value)$('#mCat').value=s;
   });
 }
-function closeModal(){$('#modalBg').classList.remove('on');}
+function closeModal(){$('#modalBg').classList.remove('on');rawPrefill=null;}
 async function saveTx(id){
   const amt=parseFloat($('#mAmt').value);
   if(!(amt>=0)||!$('#mAmt').value){toast('Enter a valid amount');return;}
@@ -543,10 +582,12 @@ async function saveTx(id){
     account_hint:$('#mAcct').value.trim()||null,
     notes:$('#mNotes').value.trim()||null
   };
+  if(!id&&rawPrefill)rec.raw_message_id=rawPrefill.raw_message_id;
   const res=id
     ?await db.from('transactions').update(rec).eq('id',id)
     :await db.from('transactions').insert({...rec,source:'manual'});
   if(res.error){toast('Save failed: '+res.error.message);return;}
+  if(!id&&rawPrefill){await db.from('raw_messages').update({parse_status:'parsed'}).eq('id',rawPrefill.raw_message_id);rawPrefill=null;}
   if($('#mRemember').checked&&merchant&&catId)await rememberRule(merchant,catId,false);
   closeModal();
   toast(id?'Transaction updated':'Transaction added');
@@ -583,8 +624,11 @@ async function applyRuleAll(pat,catId){
 async function renderReview(){
   const el=$('#view-review');
   el.innerHTML='<div class="empty">Loading…</div>';
-  const{data}=await db.from('transactions').select('*').eq('status','needs_review').order('occurred_at',{ascending:false}).limit(200);
-  const rows=data||[];
+  const[{data},{data:raws}]=await Promise.all([
+    db.from('transactions').select('*').eq('status','needs_review').order('occurred_at',{ascending:false}).limit(200),
+    db.from('raw_messages').select('*').in('parse_status',['pending','failed']).order('received_at',{ascending:false}).limit(100)
+  ]);
+  const rows=data||[],rawRows=raws||[];
   el.innerHTML=`
   <div class="pg-head"><div class="pg-title">Review queue</div><div class="muted">${rows.length} item${rows.length!==1?'s':''}</div></div>
   ${rows.length?rows.map(t=>{
@@ -604,7 +648,28 @@ async function renderReview(){
         <button class="btn pri sm" onclick="saveReview('${t.id}')">Save</button>
         <button class="btn sm" onclick="openTxModal('${t.id}')" title="Edit details"><i class="ti ti-pencil"></i></button>
       </div>
-    </div>`;}).join(''):'<div class="empty"><i class="ti ti-circle-check" style="font-size:28px;display:block;margin-bottom:8px;color:var(--ok-tx)"></i>Nothing to review — all transactions are categorized.</div>'}`;
+    </div>`;}).join(''):'<div class="empty"><i class="ti ti-circle-check" style="font-size:28px;display:block;margin-bottom:8px;color:var(--ok-tx)"></i>Nothing to review — all transactions are categorized.</div>'}
+  ${rawRows.length?`<div class="pg-head" style="margin-top:26px"><div class="pg-title" style="font-size:15px">Unparsed alerts</div><div class="muted">${rawRows.length} — couldn't auto-read these; add manually or ignore</div></div>`+rawRows.map(r=>`
+    <div class="rev-item">
+      <div class="rev-main">
+        <div class="muted">${fmtDT(r.received_at)} · ${esc(r.source)}${r.sender?' · '+esc(r.sender):''}${r.subject?' · '+esc(r.subject):''}</div>
+        <div style="font-size:13px;margin-top:4px;white-space:pre-wrap;word-break:break-word">${esc((r.body||'').slice(0,400))}</div>
+      </div>
+      <div class="rev-ctl">
+        <button class="btn pri sm" onclick="convertRaw('${r.id}')">Add manually</button>
+        <button class="btn sm" onclick="ignoreRaw('${r.id}')">Ignore</button>
+      </div>
+    </div>`).join(''):''}`;
+}
+let rawPrefill=null;
+async function convertRaw(rawId){
+  const{data:r}=await db.from('raw_messages').select('*').eq('id',rawId).single();
+  rawPrefill={raw_message_id:rawId,notes:(r?.body||'').slice(0,140)};
+  openTxModal();
+}
+async function ignoreRaw(id){
+  await db.from('raw_messages').update({parse_status:'ignored'}).eq('id',id);
+  renderReview();
 }
 async function saveReview(id){
   const catId=$(`#revCat-${id}`).value;

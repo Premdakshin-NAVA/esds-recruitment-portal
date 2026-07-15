@@ -33,6 +33,9 @@ sign-ups to the owner's email.
 
 - [x] Phase 0 — BRE
 - [x] Phase 1 — Core portal (schema, auth, manual entry, review queue, dashboard)
-- [ ] Phase 2 — Ingestion (webhook, parsers, Gmail Apps Script, SMS forwarding)
+- [x] Phase 2 (backend) — Ingest webhook live + parser (unit-tested, e2e-tested),
+      dedup, auto-categorize; Gmail Apps Script + SMS forwarder guides in `ingestion/`.
+      **Owner setup pending:** run the Apps Script + install the SMS forwarder (see `ingestion/SETUP.md`)
+- [x] Portal v3 — mobile layout, unparsed-alerts inbox, CSV export
 - [ ] Phase 3 — Intelligence (learning-loop backfill, suggestions, summaries)
-- [ ] Phase 4 — Polish (budgets, recurring detection, CSV export)
+- [ ] Phase 4 — Polish (budgets, recurring detection)
