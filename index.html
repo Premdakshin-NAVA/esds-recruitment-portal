@@ -282,6 +282,21 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
 .rec-n{background:var(--err-bg);color:var(--err-tx);border-color:#fecaca}
 .rec-n.active,.rec-n:hover{background:#dc2626;color:#fff;border-color:#dc2626}
 
+/* ── NOTIFICATIONS ── */
+.notif-wrap{position:relative}
+.notif-badge{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;pointer-events:none}
+.notif-panel{position:absolute;top:38px;right:0;width:340px;max-height:420px;overflow-y:auto;background:var(--surf);border:1px solid var(--bdr);border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.14);z-index:250;display:none}
+.notif-panel.open{display:block}
+.notif-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--surf)}
+.notif-item{padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:var(--bg)}
+.notif-item.unread{background:var(--acc-bg)}
+.notif-title{font-size:12.5px;font-weight:600}
+.notif-body{font-size:12px;color:var(--tx2);margin-top:2px}
+.notif-time{font-size:10.5px;color:var(--txm);margin-top:3px}
+.notif-empty{padding:26px 14px;text-align:center;color:var(--txm);font-size:12.5px}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transition:transform .22s ease;white-space:nowrap;pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0)}
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -367,6 +382,17 @@ textarea.tef-input{min-height:80px;resize:vertical;line-height:1.5}
         <div class="pg-sub" id="pgSub">All active hiring processes — ESDS Chennai</div>
       </div>
       <div class="tb-right">
+        <div class="notif-wrap">
+          <button class="ib" id="notifBtn" title="Notifications" onclick="toggleNotif()"><i class="ti ti-bell"></i></button>
+          <span class="notif-badge" id="notifBadge"></span>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-hd">
+              <span style="font-size:12px;font-weight:600">Notifications</span>
+              <button class="btn btn-sm" onclick="markAllNotifRead()">Mark all read</button>
+            </div>
+            <div id="notifList"></div>
+          </div>
+        </div>
         <button class="btn btn-p" id="newBtn" onclick="openMo('moNew')" style="display:none"><i class="ti ti-plus"></i> New process</button>
       </div>
     </div>
@@ -983,6 +1009,10 @@ async function doLogout(){
   await sb.auth.signOut();
   document.getElementById('appShell').style.display='none';
   document.getElementById('fbBtn').style.display='none';
+  document.getElementById('notifPanel')?.classList.remove('open');
+  const nb=document.getElementById('notifBadge'); if(nb) nb.style.display='none';
+  try{ if(notifChannel){ sb.removeChannel(notifChannel); notifChannel=null; } }catch(e){}
+  notifItems=[];
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('loginEmail').value='';
   document.getElementById('loginPwd').value='';
@@ -1029,6 +1059,8 @@ async function initApp(user){
   await loadTeam();
   await loadProcesses();
   applyPermissions();
+  loadNotifs();
+  subscribeNotifs();
 }
 
 // Map known user IDs to roles/names (fallback for first login)
@@ -1307,6 +1339,10 @@ async function saveComment(id){
     text:txt
   });
   if(error){toast('Error: '+error.message);return;}
+  const cproc=processes.find(p=>p.id===id);
+  if(cproc?.assigned_ta) notify([{recipient_name:cproc.assigned_ta}],'comment',
+    'New comment: '+(cproc.candidates?.name||'candidate'),
+    currentProfile.full_name+': '+txt.slice(0,120), id);
   openDP(id); toast('Comment saved');
 }
 
@@ -1510,6 +1546,16 @@ async function saveStatus(){
   closeMo('moStatus');
   await loadProcesses();
   toast('Status updated — '+auto.label);
+
+  // In-app notifications: assigned HM (on scheduling) + the TA who owns the process
+  const candName=proc.candidates?.name||'candidate';
+  const recips=[];
+  if(isScheduled&&assignedHM) recips.push({recipient_name:assignedHM});
+  if(proc.assigned_ta) recips.push({recipient_name:proc.assigned_ta});
+  notify(recips,'status',
+    isScheduled?('Interview scheduled: '+candName):('Status update: '+candName),
+    selStageVal+(isScheduled&&assignedHM?(' · HM: '+assignedHM):'')+' — by '+currentProfile.full_name,
+    statusId);
 
   // Send emails if scheduling
   if(isScheduled){
@@ -1805,6 +1851,87 @@ async function submitFeedback(){
   });
   if(error){toast('Error: '+error.message);return;}
   closeMo('moFeedback'); toast('Thanks! Feedback sent ✓');
+  notify([{recipient_role:'admin'}],'feedback','New '+kind+' feedback',
+    (currentProfile?.full_name||'Someone')+': '+msg.slice(0,120));
+}
+
+// ── NOTIFICATIONS ──
+let notifItems=[]; let notifChannel=null;
+
+// Insert notification rows; skips self-directed ones. Fire-and-forget.
+async function notify(recips,kind,title,body,processId){
+  try{
+    const rows=(recips||[])
+      .filter(r=>!(r.recipient_name&&currentProfile&&r.recipient_name===currentProfile.full_name))
+      .map(r=>({...r,kind,title,body:body||null,process_id:processId||null}));
+    if(rows.length) await sb.from('notifications').insert(rows);
+  }catch(e){ console.warn('notify failed',e); }
+}
+
+async function loadNotifs(){
+  try{
+    const {data}=await sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(30);
+    notifItems=data||[];
+  }catch(e){ notifItems=[]; }
+  renderNotifBadge(); renderNotifList();
+}
+function renderNotifBadge(){
+  const n=notifItems.filter(x=>!x.read).length;
+  const b=document.getElementById('notifBadge');
+  if(!b) return;
+  b.textContent=n>9?'9+':n;
+  b.style.display=n>0?'flex':'none';
+}
+function notifAgo(ts){
+  const s=Math.max(0,(Date.now()-new Date(ts).getTime())/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return new Date(ts).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+function renderNotifList(){
+  const el=document.getElementById('notifList'); if(!el) return;
+  if(!notifItems.length){ el.innerHTML='<div class="notif-empty"><i class="ti ti-bell-off" style="font-size:20px;display:block;margin-bottom:6px;opacity:.5"></i>No notifications yet</div>'; return; }
+  el.innerHTML=notifItems.map(n=>`
+    <div class="notif-item ${n.read?'':'unread'}" onclick="openNotif('${n.id}')">
+      <div class="notif-title">${esc(n.title)}</div>
+      ${n.body?`<div class="notif-body">${esc(n.body)}</div>`:''}
+      <div class="notif-time">${notifAgo(n.created_at)}</div>
+    </div>`).join('');
+}
+function toggleNotif(){
+  const p=document.getElementById('notifPanel');
+  if(!p) return;
+  const opening=!p.classList.contains('open');
+  p.classList.toggle('open');
+  if(opening) loadNotifs();
+}
+async function openNotif(id){
+  const n=notifItems.find(x=>x.id===id); if(!n) return;
+  if(!n.read){
+    n.read=true; renderNotifBadge(); renderNotifList();
+    try{ await sb.from('notifications').update({read:true}).eq('id',id); }catch(e){}
+  }
+  if(n.process_id&&processes.some(p=>p.id===n.process_id)){
+    document.getElementById('notifPanel').classList.remove('open');
+    openDP(n.process_id);
+  }
+}
+async function markAllNotifRead(){
+  notifItems.forEach(n=>n.read=true);
+  renderNotifBadge(); renderNotifList();
+  try{ await sb.from('notifications').update({read:true}).eq('read',false); }catch(e){}
+}
+function subscribeNotifs(){
+  try{
+    if(notifChannel) sb.removeChannel(notifChannel);
+    // RLS scopes realtime delivery — any event we receive is addressed to us
+    notifChannel=sb.channel('notif-live')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},payload=>{
+        notifItems.unshift(payload.new); renderNotifBadge(); renderNotifList();
+        toast('🔔 '+(payload.new.title||'New notification'));
+      }).subscribe();
+  }catch(e){ console.warn('realtime unavailable',e); }
 }
 
 // ── REPORTS ──
@@ -2239,6 +2366,9 @@ async function saveTEF() {
     if(error){ toast('Error saving TEF: '+error.message); return; }
   }
 
+  if(proc.assigned_ta) notify([{recipient_name:proc.assigned_ta}],'tef',
+    'TEF updated: '+(proc.candidates?.name||'candidate'),
+    'Saved by '+currentProfile.full_name, tefProcessId);
   toast('TEF saved successfully ✓');
 }
 
@@ -2299,6 +2429,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
   // Enter key on login
   document.getElementById('loginPwd').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPwd').focus();});
+
+  // Close the notifications panel when clicking anywhere outside it
+  document.addEventListener('click',e=>{
+    const p=document.getElementById('notifPanel');
+    if(p&&p.classList.contains('open')&&!e.target.closest('.notif-wrap')) p.classList.remove('open');
+  });
 });
 </script>
 </body>

@@ -23,6 +23,12 @@ an admin/developer can pre-authorize a role by email (the "Add admins" panel on
 the Team page). `initApp()` consults it on first login. A signing-in user can
 read only their own row; admins/developers manage all rows.
 
+## 006 — `add_notifications.sql` — ✅ APPLIED
+Additive. `notifications` table for the in-app bell: addressed by profile id,
+display name, or role (`admin` also reaches developers); realtime enabled with
+RLS-filtered delivery. Emitted by the app on status changes, HM assignment,
+TEF saves, comments, and new feedback.
+
 ## 005 — `qa_hardening.sql` — ✅ APPLIED
 QA fixes: BEFORE INSERT trigger on `profiles` pins a new user's email to their
 JWT and forces their role to the `role_provisioning` value (default `hm`) —
