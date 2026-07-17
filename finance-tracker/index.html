@@ -295,6 +295,7 @@ db.auth.onAuthStateChange((_e,session)=>{
     $('#app').classList.add('on');
     enterApp();
   }else{
+    appLoaded=false;
     $('#app').classList.remove('on');
     $('#loginWrap').style.display='flex';
   }
@@ -311,12 +312,19 @@ async function enterApp(){
 /* ── DATA ── */
 async function loadCats(){const{data}=await db.from('categories').select('*').order('sort');cats=data||[];}
 async function loadRules(){const{data}=await db.from('merchant_rules').select('*').order('pattern');rules=data||[];}
+function ruleMatches(r,m){
+  if(r.match_type==='exact')return m===r.pattern;
+  if(!m.includes(r.pattern))return false;
+  if(r.pattern.length>4)return true;
+  // short patterns ('ola','jio') must match as a whole word, not as a substring
+  const escRe=r.pattern.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return new RegExp('(^|[^a-z0-9])'+escRe+'([^a-z0-9]|$)').test(m);
+}
 function suggestCat(merchant){
   if(!merchant)return null;
   const m=merchant.toLowerCase();
-  let r=rules.find(r=>r.match_type==='exact'&&m===r.pattern);
-  if(!r)r=rules.filter(r=>r.match_type==='contains'&&m.includes(r.pattern)).sort((a,b)=>b.pattern.length-a.pattern.length)[0];
-  return r?r.category_id:null;
+  const hit=rules.filter(r=>ruleMatches(r,m)).sort((a,b)=>(b.match_type==='exact')-(a.match_type==='exact')||b.pattern.length-a.pattern.length)[0];
+  return hit?hit.category_id:null;
 }
 async function refreshReviewBadge(){
   const{count}=await db.from('transactions').select('id',{count:'exact',head:true}).eq('status','needs_review');
@@ -610,11 +618,13 @@ async function rememberRule(merchant,catId,offerBackfill=true){
   if(error){toast('Rule save failed: '+error.message);return;}
   await loadRules();
   if(!offerBackfill)return;
-  const{count}=await db.from('transactions').select('id',{count:'exact',head:true}).eq('status','needs_review').ilike('merchant',`%${escLike(pat)}%`);
-  if(count>0)toast(`${count} more uncategorized transaction${count>1?'s':''} match “${pat}”`,{label:'Apply to all',fn:()=>applyRuleAll(pat,catId)});
+  const{data}=await db.from('transactions').select('id,merchant').eq('status','needs_review').ilike('merchant',`%${escLike(pat)}%`);
+  const rule={pattern:pat,match_type:'contains'};
+  const ids=(data||[]).filter(t=>t.merchant&&ruleMatches(rule,t.merchant.toLowerCase())).map(t=>t.id);
+  if(ids.length>0)toast(`${ids.length} more uncategorized transaction${ids.length>1?'s':''} match “${pat}”`,{label:'Apply to all',fn:()=>applyRuleAll(ids,catId)});
 }
-async function applyRuleAll(pat,catId){
-  const{error}=await db.from('transactions').update({category_id:catId,status:'categorized'}).eq('status','needs_review').ilike('merchant',`%${escLike(pat)}%`);
+async function applyRuleAll(ids,catId){
+  const{error}=await db.from('transactions').update({category_id:catId,status:'categorized'}).in('id',ids);
   toast(error?'Failed: '+error.message:'Applied to matching transactions');
   refreshReviewBadge();
   if(view==='review')renderReview();else if(view==='tx'){txPage=0;renderTx();}
@@ -674,12 +684,13 @@ async function ignoreRaw(id){
 async function saveReview(id){
   const catId=$(`#revCat-${id}`).value;
   if(!catId){toast('Pick a category first');return;}
+  const remember=$(`#revRem-${id}`)?.checked;
   const{data:t}=await db.from('transactions').select('merchant').eq('id',id).single();
   const{error}=await db.from('transactions').update({category_id:catId,status:'categorized'}).eq('id',id);
   if(error){toast('Failed: '+error.message);return;}
   document.getElementById('rev-'+id)?.remove();
   refreshReviewBadge();
-  if($(`#revRem-${id}`)?.checked&&t?.merchant)await rememberRule(t.merchant,catId);
+  if(remember&&t?.merchant)await rememberRule(t.merchant,catId);
   if(!document.querySelector('.rev-item'))renderReview();
 }
 

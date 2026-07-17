@@ -87,11 +87,19 @@ Deno.serve(async (req) => {
   if (parsed.merchant) {
     const m = parsed.merchant.toLowerCase();
     const { data: rules } = await db.from("merchant_rules").select("*");
-    const exact = (rules ?? []).find((r) => r.match_type === "exact" && r.pattern === m);
-    const contains = (rules ?? [])
-      .filter((r) => r.match_type === "contains" && m.includes(r.pattern))
-      .sort((a, b) => b.pattern.length - a.pattern.length)[0];
-    const hit = exact ?? contains;
+    // short patterns ('ola','jio') must match as a whole word, not as a substring
+    const matches = (r: { match_type: string; pattern: string }) => {
+      if (r.match_type === "exact") return r.pattern === m;
+      if (!m.includes(r.pattern)) return false;
+      if (r.pattern.length > 4) return true;
+      const escRe = r.pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9])${escRe}([^a-z0-9]|$)`).test(m);
+    };
+    const hit = (rules ?? []).filter(matches)
+      .sort((a, b) =>
+        (Number(b.match_type === "exact") - Number(a.match_type === "exact")) ||
+        (b.pattern.length - a.pattern.length)
+      )[0];
     if (hit) {
       categoryId = hit.category_id;
       await db.from("merchant_rules").update({ hit_count: (hit.hit_count ?? 0) + 1 }).eq("id", hit.id);
