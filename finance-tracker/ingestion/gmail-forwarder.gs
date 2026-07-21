@@ -7,7 +7,7 @@
  *     "Finance Tracker forwarder").
  *  3. Run the `setup` function once (▶ button) and approve the Gmail
  *     permission prompts.
- *  4. Done. It now checks Gmail every 5 minutes for unread bank alerts,
+ *  4. Done. It now checks Gmail every minute for unread bank alerts,
  *     posts them to the tracker, and labels them "fintracker-sent".
  *
  * To add/remove banks, edit SENDER_QUERY below and save — no other change.
@@ -31,15 +31,15 @@ const SENDER_QUERY = [
 const LABEL = "fintracker-sent";
 
 function setup() {
-  // idempotent: clear old triggers, create the 5-minute poll
+  // idempotent: clear old triggers, create the 1-minute poll
   ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger("forwardAlerts").timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger("forwardAlerts").timeBased().everyMinutes(1).create();
   GmailApp.createLabel(LABEL);
   forwardAlerts(); // first run now
 }
 
 function forwardAlerts() {
-  const label = GmailApp.getLabelByName(LABEL) || GmailApp.createLabel(LABEL);
+  const label = GmailApp.getUserLabelByName(LABEL) || GmailApp.createLabel(LABEL);
   const threads = GmailApp.search(`(${SENDER_QUERY}) -label:${LABEL} newer_than:2d`, 0, 20);
   for (const thread of threads) {
     for (const msg of thread.getMessages()) {
