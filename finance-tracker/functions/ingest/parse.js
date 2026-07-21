@@ -72,6 +72,36 @@ function parseChannel(text, isCard) {
   return "other";
 }
 
+// Known VPA domain suffixes for the big UPI apps — most banks/apps issue
+// handles with a recognizable suffix regardless of which bank backs them
+// (e.g. Google Pay mints "...@ok<bank>" handles across every partner bank).
+const VPA_APP_DOMAINS = [
+  [/^ok/, "Google Pay"],
+  [/^(ybl|ibl|axl)$/, "PhonePe"],
+  [/^paytm$/, "Paytm"],
+  [/^apl$/, "Amazon Pay"],
+];
+
+function parseMode(text) {
+  const head = text.slice(0, 500);
+  // Card network/type is the most specific instrument signal when present,
+  // even on a UPI-rail transaction (e.g. tapping a RuPay credit card via a
+  // UPI app still means the money moved off that card, not a bank a/c).
+  if (/\brupay\b/i.test(head)) return "RuPay Card";
+  if (/\bcredit card\b/i.test(head)) return "Credit Card";
+  if (/\bdebit card\b/i.test(head)) return "Debit Card";
+  const vpa = head.match(/@([a-z][a-z0-9.\-]{1,20})/i);
+  if (vpa) {
+    const domain = vpa[1].toLowerCase();
+    const app = VPA_APP_DOMAINS.find(([re]) => re.test(domain));
+    return app ? app[1] : "UPI";
+  }
+  if (/\b(neft|imps|rtgs|net ?banking)\b/i.test(head)) return "Online Transaction";
+  if (/\bwallet\b/i.test(head)) return "Wallet";
+  if (/\bcash\b/i.test(head)) return "Cash";
+  return null;
+}
+
 function parseRef(text) {
   // Non-greedy gap tolerates any wording between "ref(erence)" and the
   // digits ("reference no.: X", "Reference Number: X", "ref# X", ...).
@@ -111,6 +141,7 @@ export function parseAlert(text, receivedAt) {
     merchant,
     account_hint: hint,
     channel: parseChannel(text, isCard),
+    payment_mode: parseMode(text),
     ref_no: ref,
     occurred_at: parseWhen(text, receivedAt || new Date()),
   };

@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
     merchant: parsed.merchant,
     account_hint: parsed.account_hint,
     channel: parsed.channel,
+    payment_mode: parsed.payment_mode,
     ref_no: parsed.ref_no,
     category_id: categoryId,
     status: categoryId ? "categorized" : "needs_review",

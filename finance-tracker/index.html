@@ -247,8 +247,9 @@ const SUPA_KEY='__SUPABASE_ANON_KEY__';
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 let cats=[],rules=[],keywords=[],view='dash';
+const PAYMENT_MODES=['Google Pay','PhonePe','Paytm','Amazon Pay','UPI','RuPay Card','Credit Card','Debit Card','Online Transaction','Wallet','Cash'];
 let dashDate=new Date();dashDate.setDate(1);dashDate.setHours(0,0,0,0);
-let txFilters={month:'cur',cat:'all',status:'all',q:''};
+let txFilters={month:'cur',cat:'all',status:'all',mode:'all',q:''};
 let txPage=0;const TX_PAGE=50;
 
 const $=s=>document.querySelector(s);
@@ -364,7 +365,7 @@ async function renderDash(){
   const m0=new Date(dashDate),m1=new Date(m0.getFullYear(),m0.getMonth()+1,1);
   const t0=new Date(m0.getFullYear(),m0.getMonth()-5,1);
   const[{data:rows},reviewN]=await Promise.all([
-    db.from('transactions').select('amount,direction,occurred_at,category_id,merchant,currency').gte('occurred_at',t0.toISOString()).lt('occurred_at',m1.toISOString()).order('occurred_at',{ascending:false}).limit(5000),
+    db.from('transactions').select('amount,direction,occurred_at,category_id,merchant,currency,payment_mode').gte('occurred_at',t0.toISOString()).lt('occurred_at',m1.toISOString()).order('occurred_at',{ascending:false}).limit(5000),
     refreshReviewBadge()
   ]);
   const all=rows||[];
@@ -382,6 +383,15 @@ async function renderDash(){
     name:k==='_none'?'Uncategorized':(catById(k)?.name||'Unknown'),...v
   })).sort((a,b)=>b.amt-a.amt);
   const maxCat=catRows[0]?.amt||1;
+
+  // spend by payment mode (selected month, debits)
+  const byMode={};
+  inMonth.filter(r=>r.direction==='debit').forEach(r=>{
+    const k=r.payment_mode||'Unknown';
+    byMode[k]=byMode[k]||{amt:0,n:0};byMode[k].amt+=+r.amount;byMode[k].n++;
+  });
+  const modeRows=Object.entries(byMode).map(([name,v])=>({name,...v})).sort((a,b)=>b.amt-a.amt);
+  const maxMode=modeRows[0]?.amt||1;
 
   // 6-month trend (debits)
   const buckets=[];
@@ -444,14 +454,25 @@ async function renderDash(){
     ${newMerchantCount>0?`<div class="insight-row"><span>New merchants this month</span><span class="flat">${newMerchantCount}</span></div>`:''}
   </div>`:''}
   <div class="dash-grid">
-    <div class="card">
-      <h3>Spend by category</h3>
-      ${catRows.length?catRows.map(r=>`
-        <div class="hbar-row" data-tip="${esc(r.name)}: ${fmt(r.amt)} · ${r.n} txn${r.n>1?'s':''}">
-          <div class="hbar-lbl">${esc(r.name)}</div>
-          <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(r.amt/maxCat*100,1)}%"></div></div>
-          <div class="hbar-val">${fmt(r.amt)}</div>
-        </div>`).join(''):'<div class="empty">No spending recorded this month</div>'}
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <h3>Spend by category</h3>
+        ${catRows.length?catRows.map(r=>`
+          <div class="hbar-row" data-tip="${esc(r.name)}: ${fmt(r.amt)} · ${r.n} txn${r.n>1?'s':''}">
+            <div class="hbar-lbl">${esc(r.name)}</div>
+            <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(r.amt/maxCat*100,1)}%"></div></div>
+            <div class="hbar-val">${fmt(r.amt)}</div>
+          </div>`).join(''):'<div class="empty">No spending recorded this month</div>'}
+      </div>
+      <div class="card">
+        <h3>Spend by payment mode</h3>
+        ${modeRows.length?modeRows.map(r=>`
+          <div class="hbar-row" data-tip="${esc(r.name)}: ${fmt(r.amt)} · ${r.n} txn${r.n>1?'s':''}">
+            <div class="hbar-lbl">${esc(r.name)}</div>
+            <div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(r.amt/maxMode*100,1)}%"></div></div>
+            <div class="hbar-val">${fmt(r.amt)}</div>
+          </div>`).join(''):'<div class="empty">No spending recorded this month</div>'}
+      </div>
     </div>
     <div>
       <div class="card" style="margin-bottom:14px">
@@ -504,6 +525,8 @@ function buildTxQuery(){
   if(txFilters.cat==='none')q=q.is('category_id',null);
   else if(txFilters.cat!=='all')q=q.eq('category_id',txFilters.cat);
   if(txFilters.status!=='all')q=q.eq('status',txFilters.status);
+  if(txFilters.mode==='none')q=q.is('payment_mode',null);
+  else if(txFilters.mode!=='all')q=q.eq('payment_mode',txFilters.mode);
   if(txFilters.q){const s=escLike(txFilters.q.replace(/,/g,' ').trim());q=q.or(`merchant.ilike.%${s}%,notes.ilike.%${s}%`);}
   return q;
 }
@@ -511,9 +534,9 @@ async function exportCsv(){
   const{data}=await buildTxQuery().limit(10000);
   const rows=data||[];
   if(!rows.length){toast('Nothing to export for the current filters');return;}
-  const cols=['occurred_at','direction','amount','currency','merchant','category','status','channel','account','ref_no','source','notes'];
+  const cols=['occurred_at','direction','amount','currency','merchant','category','status','channel','payment_mode','account','ref_no','source','notes'];
   const csv=[cols.join(',')].concat(rows.map(t=>{
-    const vals=[t.occurred_at,t.direction,t.amount,t.currency,t.merchant,catById(t.category_id)?.name||'',t.status,t.channel,t.account_hint,t.ref_no,t.source,t.notes];
+    const vals=[t.occurred_at,t.direction,t.amount,t.currency,t.merchant,catById(t.category_id)?.name||'',t.status,t.channel,t.payment_mode,t.account_hint,t.ref_no,t.source,t.notes];
     return vals.map(v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');
   })).join('\n');
   const a=document.createElement('a');
@@ -544,6 +567,11 @@ async function renderTx(more){
         <option value="categorized" ${txFilters.status==='categorized'?'selected':''}>Categorized</option>
         <option value="needs_review" ${txFilters.status==='needs_review'?'selected':''}>Needs review</option>
       </select>
+      <select class="sel" onchange="setTxFilter('mode',this.value)">
+        <option value="all">Any payment mode</option>
+        <option value="none" ${txFilters.mode==='none'?'selected':''}>Unknown</option>
+        ${PAYMENT_MODES.map(m=>`<option value="${esc(m)}" ${txFilters.mode===m?'selected':''}>${esc(m)}</option>`).join('')}
+      </select>
       <input class="inp" placeholder="Search merchant / notes…" value="${esc(txFilters.q)}" onchange="setTxFilter('q',this.value)">
     </div>
     <div id="txBody"></div>`;
@@ -555,14 +583,14 @@ async function renderTx(more){
   if(!window._txCache.length){body.innerHTML='<div class="empty">No transactions match. Add one with the button above.</div>';return;}
   body.innerHTML=`
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Channel</th><th style="text-align:right">Amount</th></tr></thead>
+    <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Payment mode</th><th style="text-align:right">Amount</th></tr></thead>
     <tbody>${window._txCache.map(t=>{
       const c=catById(t.category_id);
       return`<tr onclick="openTxModal('${t.id}')">
         <td class="muted" style="white-space:nowrap">${fmtD(t.occurred_at)}</td>
         <td class="td-merch">${esc(t.merchant||'—')}${t.account_hint?` <span class="muted">${esc(t.account_hint)}</span>`:''}</td>
         <td>${t.status==='needs_review'?'<span class="chip review"><i class="ti ti-alert-circle" style="font-size:12px"></i>Review</span>':c?`<span class="chip"><span class="dot" style="background:${c.color||'#898781'}"></span>${esc(c.name)}</span>`:'<span class="muted">—</span>'}</td>
-        <td class="muted">${esc(t.channel||'')}</td>
+        <td class="muted">${esc(t.payment_mode||t.channel||'')}</td>
         <td class="amt ${t.direction==='credit'?'credit':''}">${t.direction==='credit'?'+':''}${fmt(t.amount,t.currency)}</td>
       </tr>`;}).join('')}</tbody>
   </table></div>
@@ -599,8 +627,12 @@ async function openTxModal(id){
       <option value="">—</option>
       ${['upi','card','netbanking','cash','wallet','other'].map(c=>`<option ${t.channel===c?'selected':''}>${c}</option>`).join('')}
     </select></div>
-    <div class="f"><label>Account (e.g. HDFC ··1234)</label><input class="inp" id="mAcct" value="${esc(t.account_hint||'')}"></div>
+    <div class="f"><label>Payment mode</label><select class="sel" id="mMode">
+      <option value="">—</option>
+      ${PAYMENT_MODES.map(m=>`<option ${t.payment_mode===m?'selected':''}>${esc(m)}</option>`).join('')}
+    </select></div>
   </div>
+  <div class="f"><label>Account (e.g. HDFC ··1234)</label><input class="inp" id="mAcct" value="${esc(t.account_hint||'')}"></div>
   <div class="f"><label>Notes</label><input class="inp" id="mNotes" value="${esc(t.notes||'')}"></div>
   <div class="modal-acts">
     ${id?'<button class="btn danger" onclick="deleteTx(\''+id+'\')"><i class="ti ti-trash"></i>Delete</button>':''}
@@ -631,6 +663,7 @@ async function saveTx(id){
     category_id:catId,
     status:catId?'categorized':'needs_review',
     channel:$('#mChan').value||null,
+    payment_mode:$('#mMode').value||null,
     account_hint:$('#mAcct').value.trim()||null,
     notes:$('#mNotes').value.trim()||null
   };
@@ -690,7 +723,7 @@ async function renderReview(){
     return`<div class="rev-item" id="rev-${t.id}">
       <div class="rev-main">
         <div class="rev-merch">${esc(t.merchant||'(unknown merchant)')}</div>
-        <div class="muted">${fmtDT(t.occurred_at)}${t.account_hint?' · '+esc(t.account_hint):''}${t.channel?' · '+esc(t.channel):''} · ${esc(t.source)}${t.notes?' · '+esc(t.notes):''}</div>
+        <div class="muted">${fmtDT(t.occurred_at)}${t.account_hint?' · '+esc(t.account_hint):''}${t.payment_mode||t.channel?' · '+esc(t.payment_mode||t.channel):''} · ${esc(t.source)}${t.notes?' · '+esc(t.notes):''}</div>
       </div>
       <div class="rev-amt ${t.direction==='credit'?'credit':''}">${t.direction==='credit'?'+':''}${fmt(t.amount,t.currency)}</div>
       <div class="rev-ctl">
