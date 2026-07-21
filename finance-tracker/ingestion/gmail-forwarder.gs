@@ -19,10 +19,12 @@ const TOKEN = "ft_0332e62cef88401ef726c5391e6f21f7747c0ad280b27c60";
 // Gmail search for bank/payment alert senders. Extend as needed.
 const SENDER_QUERY = [
   "from:(alerts@hdfcbank.net)",
+  "from:(alerts@hdfcbank.bank.in)",
   "from:(credit_cards@icicibank.com)",
   "from:(alerts@icicibank.com)",
   "from:(alerts@sbi.co.in)",
   "from:(alerts@axisbank.com)",
+  "from:(alerts@axis.bank.in)",
   "from:(alerts@kotak.com)",
   "from:(noreply@phonepe.com)",
   "from:(no-reply@paytm.com)",
