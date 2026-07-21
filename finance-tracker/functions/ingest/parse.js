@@ -13,27 +13,51 @@ function parseAmount(text) {
 }
 
 function parseDirection(text) {
-  if (/(credited|received|deposited|refund(ed)?|cashback)/i.test(text)) return "credit";
+  if (/(credited|received|deposited|refund(ed)?|cashback|reversal|reversed)/i.test(text)) return "credit";
   if (/(debited|debit(ed)? from|spent|paid|payment of|sent|purchase|withdrawn|txn|transaction)/i.test(text)) return "debit";
   return null;
 }
 
 function parseMerchant(text) {
-  // VPA (UPI handle) — prefer the trailing display name when present
-  let m = text.match(/(?:to|from|at)\s+VPA\s+([a-z0-9.\-_]+)@[a-z0-9]+(?:\s+([A-Z][A-Za-z0-9 &.\-']{2,40}?))?(?=\s+on\s|\s*\(|[.,;]|$)/i);
-  if (m) return (m[2] || m[1]).trim();
-  m = text.match(/\bat\s+([A-Z0-9][A-Za-z0-9 &.\-*']{2,40}?)(?=\s+on\s|\s+Avl|\s+Ref|[.,;]|$)/i);
+  // Real bank templates mention the counterparty within the first paragraph;
+  // everything after is boilerplate/disclaimer text that can accidentally
+  // look like "at X" or "to X" (e.g. "we support you at every step"). Only
+  // search the head of the message, and strip stray '*' markdown-bold
+  // markers from HTML-to-text conversion first.
+  const head = text.slice(0, 500).replace(/\*/g, "");
+  // "VPA X" (optionally with a trailing human display name, in parens or
+  // bare) — regardless of the preceding verb ("to VPA", "from VPA",
+  // "towards VPA"...) and tolerant of the handle wrapping onto the next
+  // line. Only the local part (before '@') is kept as the merchant when no
+  // display name is present, matching how merchant rules are written.
+  // The display-name alternatives exclude digits so a parenthesized
+  // reference number ("(UPI Ref No 519...)") can never be mistaken for one.
+  let m = head.match(/\bVPA\s+([a-z0-9.\-_]+)@[a-z0-9][a-z0-9.\-]{1,20}\s*(?:\(([A-Za-z][A-Za-z &.\-']{1,40}?)\)|([A-Za-z][A-Za-z &.\-']{2,40}?)(?=\s+on\s|[.,;]|$))?/i);
+  if (m) return (m[2] || m[3] || m[1]).trim();
+  // Bare VPA handle without the literal "VPA" keyword ("Paid to X")
+  m = head.match(/\b([a-z0-9][a-z0-9.\-_]{1,40})@[a-z0-9][a-z0-9.\-]{1,20}\b/i);
   if (m) return m[1].trim();
-  m = text.match(/\b(?:to|towards)\s+([A-Z][A-Za-z0-9 &.\-']{2,40}?)(?=\s+on\s|\s+Ref|[.,;]|$)/i);
-  if (m && !/^(?:your|the|a\/c|account)/i.test(m[1])) return m[1].trim();
-  m = text.match(/Info:?\s*([^.\n]{3,40})/i);
+  // A labeled "Merchant:" field ("From Merchant: ORACLE SINGAPORE")
+  m = head.match(/\b(?:from\s+)?merchant:?\s*([^.\n]{3,40})/i);
+  if (m) return m[1].trim();
+  // "at X" / "to X" / "towards X" — the capture MUST start with a true
+  // uppercase letter (no /i on the group itself, unlike the verb, which is
+  // matched case-insensitively) so this can't misfire on ordinary lowercase
+  // English ("we're here to support you", "to inform you that Rs...").
+  m = head.match(/\bat\s+([A-Z0-9][A-Za-z0-9 &.\-*']{2,40}?)(?=\s+on\s|\s+Avl|\s+Ref|[.,;]|$)/);
+  if (m) return m[1].trim();
+  m = head.match(/\b(?:to|towards)\s+([A-Z][A-Za-z0-9 &.\-']{2,40}?)(?=\s+on\s|\s+Ref|[.,;]|$)/);
+  if (m && !/^(?:Your|The|A\/c|Account)/.test(m[1])) return m[1].trim();
+  m = head.match(/Info:?\s*([^.\n]{3,40})/i);
   if (m) return m[1].trim();
   return null;
 }
 
 function parseAccount(text) {
-  const card = text.match(/card\s*(?:no\.?|ending|ending in)?\s*[Xx*.]*(\d{4})/i);
-  const acct = text.match(/a\/c(?:\s*no\.?)?\s*[Xx*.]*(\d{4})/i) || text.match(/account\s*(?:no\.?)?\s*[Xx*.]*(\d{4})/i);
+  // Non-greedy gap tolerates any phrasing between the keyword and the
+  // digits ("ending 8754", "(ending in 8754)", "no. XX1234", "*1234", ...).
+  const card = text.match(/card[^0-9]{0,20}?(\d{4})/i);
+  const acct = text.match(/a\/c[^0-9]{0,20}?(\d{4})/i) || text.match(/account[^0-9]{0,20}?(\d{4})/i);
   const bank = text.match(/[-–—]\s*([A-Z][A-Za-z ]{2,25}Bank)\s*\.?\s*$/m);
   const num = card ? card[1] : acct ? acct[1] : null;
   const hint = num ? `${bank ? bank[1] + " " : ""}··${num}` : bank ? bank[1] : null;
@@ -49,7 +73,9 @@ function parseChannel(text, isCard) {
 }
 
 function parseRef(text) {
-  const m = text.match(/(?:upi\s*)?ref(?:erence)?(?:\s*no)?\.?\s*:?\s*(\d{6,18})/i)
+  // Non-greedy gap tolerates any wording between "ref(erence)" and the
+  // digits ("reference no.: X", "Reference Number: X", "ref# X", ...).
+  const m = text.match(/ref(?:erence)?[^0-9]{0,20}?(\d{6,18})/i)
     || text.match(/txn\s*(?:id|no)\.?\s*:?\s*([A-Za-z0-9]{6,22})/i);
   return m ? m[1] : null;
 }

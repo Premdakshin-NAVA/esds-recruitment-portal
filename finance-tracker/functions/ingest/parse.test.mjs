@@ -37,6 +37,26 @@ const cases = [
     text: "Get 10% cashback up to Rs.100 on your next recharge!",
     expect: null,
   },
+  {
+    name: "HDFC InstaAlert email — credit card UPI, 'Paid to' + markdown asterisks",
+    text: "HDFC BANK \nDear *Customer*,\n\nGreetings from *HDFC Bank!*\n\nWe're sharing this alert to help you quickly check a recent *UPI \ntransaction* made using your *RuPay Credit Card.*\n\n\n*Transaction Details:Rs.96.00* has been *debited* from your *RuPay Credit \nCard (ending 8754)*\nPaid to *paytm.s24i7q8@pty*\nDate: \n\n\n*20-07-26UPI Transaction Reference Number: 126569762285Important Note:*\nIf *you made this transaction,* no action is needed.\nIf *you did not make this transaction,* please act *immediately.* Your *safety \nand trust* are very important to us, and we are here to support you at \nevery step.",
+    expect: { amount: 96, direction: "debit", merchant: "paytm.s24i7q8", channel: "upi", ref_no: "126569762285", account_hint: "··8754" },
+  },
+  {
+    name: "HDFC InstaAlert email — bank account UPI, 'towards VPA X (Name)'",
+    text: "Dear Customer,\n\nGreetings from HDFC Bank!\n\nRs.10000.00 is debited from your account ending 7492 towards VPA \npremabremii-2@okaxis (PREMA S) on 19-07-26.\n\nUPI transaction reference no.: 126559079050.\n\nIf you did not authorize this transaction, please report it immediately at: \na. When in India (Toll free): 1800 258 6161 \nb. When abroad: 9122 61606160 \nc. Or SMS 'BLOCK UPI' to 7308080808.\n\nWe're here to support you in every step of the way.\n\nWarm regards,\nHDFC Bank ",
+    expect: { amount: 10000, direction: "debit", merchant: "PREMA S", channel: "upi", ref_no: "126559079050", account_hint: "··7492" },
+  },
+  {
+    name: "HDFC InstaAlert email — card spend, 'towards MERCHANT' natural-language sentence before it",
+    text: "HDFC BANK \nDear Customer,\n\nGreetings from HDFC Bank.\n\nWe would like to inform you that *Rs. 1400.00* has been debited from your \nHDFC Bank Credit Card ending *9746* towards *URBANCLAP TECHNOLOGIES* on *21 \nJul, 2026 at 08:05:01*. \nTo check your available balance, outstanding amount, or view recent \ntransactions, you may use Mycards or WhatsApp Banking.",
+    expect: { amount: 1400, direction: "debit", merchant: "URBANCLAP TECHNOLOGIES", channel: "card", account_hint: "··9746" },
+  },
+  {
+    name: "HDFC InstaAlert email — card refund/reversal, 'From Merchant:' label",
+    text: "HDFC BANK \nDear Customer,\n\nGreetings from HDFC Bank!\n\nA *transaction reversal of Rs. 103.20* has been initiated to your HDFC Bank \nCredit Card ending *9746*\n*From Merchant:* ORACLE SINGAPORE\n*Date Time:* 20 Jul, 2026 at 14:55:25\n\nPlease allow up to *48 hours* for the reversal to reflect in your card statement.",
+    expect: { amount: 103.2, direction: "credit", merchant: "ORACLE SINGAPORE", channel: "card", account_hint: "··9746" },
+  },
 ];
 
 let fail = 0;
