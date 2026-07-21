@@ -107,6 +107,11 @@ button{font-family:var(--font)}
 .trend-m{font-size:11px;color:var(--txm)}
 .trend-base{border-top:1px solid var(--baseline);margin-top:0}
 .toplist .hbar-row{grid-template-columns:1fr 90px}
+.insight-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:13px}
+.insight-row:last-child{border-bottom:none}
+.insight-row .up{color:var(--err-tx);font-variant-numeric:tabular-nums}
+.insight-row .down{color:var(--ok-tx);font-variant-numeric:tabular-nums}
+.insight-row .flat{color:var(--tx2);font-variant-numeric:tabular-nums}
 
 /* ── TABLE ── */
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -241,7 +246,7 @@ const SUPA_URL='__SUPABASE_URL__';
 const SUPA_KEY='__SUPABASE_ANON_KEY__';
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
-let cats=[],rules=[],view='dash';
+let cats=[],rules=[],keywords=[],view='dash';
 let dashDate=new Date();dashDate.setDate(1);dashDate.setHours(0,0,0,0);
 let txFilters={month:'cur',cat:'all',status:'all',q:''};
 let txPage=0;const TX_PAGE=50;
@@ -304,7 +309,7 @@ db.auth.onAuthStateChange((_e,session)=>{
 let appLoaded=false;
 async function enterApp(){
   if(appLoaded)return;appLoaded=true;
-  await Promise.all([loadCats(),loadRules()]);
+  await Promise.all([loadCats(),loadRules(),loadKeywords()]);
   refreshReviewBadge();
   nav('dash');
 }
@@ -312,19 +317,28 @@ async function enterApp(){
 /* ── DATA ── */
 async function loadCats(){const{data}=await db.from('categories').select('*').order('sort');cats=data||[];}
 async function loadRules(){const{data}=await db.from('merchant_rules').select('*').order('pattern');rules=data||[];}
+async function loadKeywords(){const{data}=await db.from('category_keywords').select('*').order('keyword');keywords=data||[];}
+function wordMatch(pat,m){
+  const escRe=pat.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return new RegExp('(^|[^a-z0-9])'+escRe+'([^a-z0-9]|$)').test(m);
+}
 function ruleMatches(r,m){
   if(r.match_type==='exact')return m===r.pattern;
   if(!m.includes(r.pattern))return false;
   if(r.pattern.length>4)return true;
   // short patterns ('ola','jio') must match as a whole word, not as a substring
-  const escRe=r.pattern.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  return new RegExp('(^|[^a-z0-9])'+escRe+'([^a-z0-9]|$)').test(m);
+  return wordMatch(r.pattern,m);
 }
 function suggestCat(merchant){
   if(!merchant)return null;
   const m=merchant.toLowerCase();
   const hit=rules.filter(r=>ruleMatches(r,m)).sort((a,b)=>(b.match_type==='exact')-(a.match_type==='exact')||b.pattern.length-a.pattern.length)[0];
-  return hit?hit.category_id:null;
+  if(hit)return hit.category_id;
+  // no merchant rule — fall back to a generic keyword hint (suggestion only,
+  // never auto-applied at ingestion), always whole-word matched since these
+  // are common English words that can appear inside unrelated names.
+  const kw=keywords.filter(k=>wordMatch(k.keyword,m)).sort((a,b)=>b.keyword.length-a.keyword.length)[0];
+  return kw?kw.category_id:null;
 }
 async function refreshReviewBadge(){
   const{count}=await db.from('transactions').select('id',{count:'exact',head:true}).eq('status','needs_review');
@@ -384,6 +398,23 @@ async function renderDash(){
 
   const top=inMonth.filter(r=>r.direction==='debit').sort((a,b)=>b.amount-a.amount).slice(0,5);
 
+  // month-over-month insights: spend delta, biggest category movers, new merchants
+  const prevBucket=buckets[4],curBucket=buckets[5];
+  const momDelta=curBucket.amt-prevBucket.amt;
+  const momPct=prevBucket.amt>0?(momDelta/prevBucket.amt*100):(curBucket.amt>0?100:0);
+  const prevByCat={};
+  all.filter(r=>r.direction==='debit'&&new Date(r.occurred_at)>=prevBucket.s&&new Date(r.occurred_at)<prevBucket.e).forEach(r=>{
+    const k=r.category_id||'_none';
+    prevByCat[k]=(prevByCat[k]||0)+ +r.amount;
+  });
+  const movers=[...new Set([...Object.keys(byCat),...Object.keys(prevByCat)])].map(k=>({
+    name:k==='_none'?'Uncategorized':(catById(k)?.name||'Unknown'),
+    delta:(byCat[k]?.amt||0)-(prevByCat[k]||0)
+  })).filter(x=>Math.abs(x.delta)>=1).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)).slice(0,3);
+  const priorMerchants=new Set(all.filter(r=>new Date(r.occurred_at)<m0&&r.merchant).map(r=>r.merchant.trim().toLowerCase()));
+  const newMerchantCount=new Set(inMonth.filter(r=>r.direction==='debit'&&r.merchant&&!priorMerchants.has(r.merchant.trim().toLowerCase())).map(r=>r.merchant.trim().toLowerCase())).size;
+  const hasInsights=prevBucket.amt>0||curBucket.amt>0;
+
   el.innerHTML=`
   <div class="pg-head">
     <div class="pg-title">Dashboard</div>
@@ -399,6 +430,19 @@ async function renderDash(){
     <div class="tile"><div class="t-lbl">Transactions</div><div class="t-val">${inMonth.length}</div></div>
     <div class="tile" style="cursor:pointer" onclick="nav('review')"><div class="t-lbl">Needs review</div><div class="t-val" style="color:${reviewN>0?'var(--warn-tx)':'inherit'}">${reviewN}</div><div class="t-sub">${reviewN>0?'tap to review':'all clear'}</div></div>
   </div>
+  ${hasInsights?`<div class="card" style="margin-bottom:14px">
+    <h3>Insights</h3>
+    <div class="insight-row">
+      <span>Spend vs previous month</span>
+      <span class="${momDelta>0?'up':momDelta<0?'down':'flat'}">${momDelta===0?'no change':(momDelta>0?'+':'')+fmt(momDelta)+' ('+(momDelta>=0?'+':'')+momPct.toFixed(0)+'%)'}</span>
+    </div>
+    ${movers.map(m=>`
+    <div class="insight-row">
+      <span>${esc(m.name)}</span>
+      <span class="${m.delta>0?'up':'down'}">${m.delta>0?'+':''}${fmt(m.delta)} vs last month</span>
+    </div>`).join('')}
+    ${newMerchantCount>0?`<div class="insight-row"><span>New merchants this month</span><span class="flat">${newMerchantCount}</span></div>`:''}
+  </div>`:''}
   <div class="dash-grid">
     <div class="card">
       <h3>Spend by category</h3>
@@ -734,6 +778,22 @@ async function renderCats(){
         <button class="btn pri" onclick="addRule()">Add</button>
       </div>
     </div>
+    <div class="card">
+      <h3>Keyword hints <span class="muted" style="font-weight:400">— generic word → category, suggestion only (never auto-applied)</span></h3>
+      <div style="max-height:420px;overflow-y:auto">${keywords.map(k=>{
+        const c=catById(k.category_id);
+        return`<div class="cat-row">
+          <span class="grow" style="font-variant-numeric:tabular-nums">${esc(k.keyword)}</span>
+          <i class="ti ti-arrow-right tabler"></i>
+          <span class="chip"><span class="dot" style="background:${c?.color||'#898781'}"></span>${esc(c?.name||'?')}</span>
+          <span class="acts"><i class="ti ti-trash" title="Delete keyword" onclick="deleteKeyword('${k.id}')"></i></span>
+        </div>`;}).join('')||'<div class="empty">No keyword hints yet</div>'}</div>
+      <div class="addform">
+        <input class="inp" id="newKeyword" placeholder="Word (e.g. cafe)">
+        <select class="sel" id="newKeywordCat">${cats.filter(c=>!c.is_archived).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>
+        <button class="btn pri" onclick="addKeyword()">Add</button>
+      </div>
+    </div>
   </div>`;
 }
 async function addCat(){
@@ -764,6 +824,17 @@ async function addRule(){
 async function deleteRule(id){
   await db.from('merchant_rules').delete().eq('id',id);
   await loadRules();renderCats();
+}
+async function addKeyword(){
+  const kw=$('#newKeyword').value.trim().toLowerCase();
+  if(!kw)return;
+  const{error}=await db.from('category_keywords').upsert({keyword:kw,category_id:$('#newKeywordCat').value},{onConflict:'keyword'});
+  if(error){toast(error.message.includes('duplicate')?'That keyword already exists':'Failed: '+error.message);return;}
+  await loadKeywords();renderCats();toast('Keyword hint added');
+}
+async function deleteKeyword(id){
+  await db.from('category_keywords').delete().eq('id',id);
+  await loadKeywords();renderCats();
 }
 
 /* ── TOAST / TIPS ── */
