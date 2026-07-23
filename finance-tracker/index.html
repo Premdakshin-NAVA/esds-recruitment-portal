@@ -128,6 +128,7 @@ tbody tr:hover{background:var(--surf2)}
 .amt.credit{color:var(--ok-tx)}
 .td-merch{font-weight:500}
 .td-merch .muted{font-weight:400}
+.td-notes{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
 .loadmore{text-align:center;margin-top:14px}
 
 /* ── REVIEW ── */
@@ -583,14 +584,18 @@ async function renderTx(more){
   if(!window._txCache.length){body.innerHTML='<div class="empty">No transactions match. Add one with the button above.</div>';return;}
   body.innerHTML=`
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Payment mode</th><th style="text-align:right">Amount</th></tr></thead>
+    <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Payment mode</th><th>Notes</th><th style="text-align:right">Amount</th></tr></thead>
     <tbody>${window._txCache.map(t=>{
       const c=catById(t.category_id);
+      const barColor=t.status==='needs_review'?'var(--warn-tx)':(c?.color||'#898781');
+      const noteFull=t.notes?esc(t.notes):'';
+      const notePreview=t.notes?(t.notes.length>28?esc(t.notes.slice(0,28))+'…':esc(t.notes)):'—';
       return`<tr onclick="openTxModal('${t.id}')">
-        <td class="muted" style="white-space:nowrap">${fmtD(t.occurred_at)}</td>
+        <td class="muted" style="white-space:nowrap;border-left:3px solid ${barColor}">${fmtD(t.occurred_at)}</td>
         <td class="td-merch">${esc(t.merchant||'—')}${t.account_hint?` <span class="muted">${esc(t.account_hint)}</span>`:''}</td>
         <td>${t.status==='needs_review'?'<span class="chip review"><i class="ti ti-alert-circle" style="font-size:12px"></i>Review</span>':c?`<span class="chip"><span class="dot" style="background:${c.color||'#898781'}"></span>${esc(c.name)}</span>`:'<span class="muted">—</span>'}</td>
         <td class="muted">${esc(t.payment_mode||t.channel||'')}</td>
+        <td class="muted td-notes" title="${noteFull}">${notePreview}</td>
         <td class="amt ${t.direction==='credit'?'credit':''}">${t.direction==='credit'?'+':''}${fmt(t.amount,t.currency)}</td>
       </tr>`;}).join('')}</tbody>
   </table></div>
@@ -617,9 +622,8 @@ async function openTxModal(id){
     <div class="f"><label>Date &amp; time</label><input class="inp" id="mDate" type="datetime-local" value="${local}"></div>
   </div>
   <div class="f"><label>Merchant / payee</label><input class="inp" id="mMerch" value="${esc(t.merchant||'')}" placeholder="e.g. Swiggy"></div>
-  <div class="f"><label>Category</label><select class="sel" id="mCat">
-    <option value="">— needs review —</option>
-    ${cats.filter(c=>!c.is_archived||c.id===t.category_id).map(c=>`<option value="${c.id}" ${t.category_id===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+  <div class="f"><label>Category</label><select class="sel" id="mCat" onchange="handleCatSelect(this,'— needs review —')">
+    ${catOptionsHtml(t.category_id,'— needs review —')}
   </select>
   <label class="remember"><input type="checkbox" id="mRemember"> Remember this merchant → category for the future</label></div>
   <div class="f2">
@@ -720,16 +724,16 @@ async function renderReview(){
   <div class="pg-head"><div class="pg-title">Review queue</div><div class="muted">${rows.length} item${rows.length!==1?'s':''}</div></div>
   ${rows.length?rows.map(t=>{
     const sug=suggestCat(t.merchant);
-    return`<div class="rev-item" id="rev-${t.id}">
+    const sugColor=sug?catById(sug)?.color||'#898781':'var(--warn-tx)';
+    return`<div class="rev-item" id="rev-${t.id}" style="border-left:4px solid ${sugColor}">
       <div class="rev-main">
         <div class="rev-merch">${esc(t.merchant||'(unknown merchant)')}</div>
         <div class="muted">${fmtDT(t.occurred_at)}${t.account_hint?' · '+esc(t.account_hint):''}${t.payment_mode||t.channel?' · '+esc(t.payment_mode||t.channel):''} · ${esc(t.source)}${t.notes?' · '+esc(t.notes):''}</div>
       </div>
       <div class="rev-amt ${t.direction==='credit'?'credit':''}">${t.direction==='credit'?'+':''}${fmt(t.amount,t.currency)}</div>
       <div class="rev-ctl">
-        <select class="sel" id="revCat-${t.id}">
-          <option value="">Pick category…</option>
-          ${cats.filter(c=>!c.is_archived).map(c=>`<option value="${c.id}" ${sug===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+        <select class="sel" id="revCat-${t.id}" onchange="handleCatSelect(this,'Pick category…')">
+          ${catOptionsHtml(sug,'Pick category…')}
         </select>
         <label><input type="checkbox" id="revRem-${t.id}" ${t.merchant?'checked':'disabled'}>Remember</label>
         <button class="btn pri sm" onclick="saveReview('${t.id}')">Save</button>
@@ -835,6 +839,22 @@ async function addCat(){
   const{error}=await db.from('categories').insert({name,color:$('#newCatColor').value,sort:500});
   if(error){toast(error.message.includes('duplicate')?'That category already exists':'Failed: '+error.message);return;}
   await loadCats();renderCats();toast('Category added');
+}
+/* ── inline "add new category" from any category <select> (tx modal, review queue) ── */
+function catOptionsHtml(selectedId,blankLabel){
+  return `<option value="">${esc(blankLabel)}</option>`
+    +cats.filter(c=>!c.is_archived||c.id===selectedId).map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')
+    +`<option value="__new__">+ Add new category…</option>`;
+}
+async function handleCatSelect(sel,blankLabel){
+  if(sel.value!=='__new__')return;
+  const name=prompt('New category name');
+  if(!name||!name.trim()){sel.value='';return;}
+  const{data,error}=await db.from('categories').insert({name:name.trim(),color:'#2a78d6',sort:500}).select('id').single();
+  if(error){toast(error.message.includes('duplicate')?'That category already exists':'Failed: '+error.message);sel.value='';return;}
+  await loadCats();
+  sel.innerHTML=catOptionsHtml(data.id,blankLabel);
+  toast('Category added');
 }
 async function renameCat(id){
   const c=catById(id);
